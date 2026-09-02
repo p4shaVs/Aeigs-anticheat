@@ -3,6 +3,8 @@ import { db } from "@/lib/db";
 import { handler, ok } from "@/lib/api";
 import { authenticateServer } from "@/lib/server-auth";
 
+export const dynamic = "force-dynamic";
+
 // Kaynak, oyuncu girişinde kontrol için aktif ban listesini çeker.
 export const GET = handler(async (req: NextRequest) => {
   const server = await authenticateServer(req);
