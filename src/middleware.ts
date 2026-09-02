@@ -12,29 +12,27 @@ export async function middleware(req: NextRequest) {
 
   const isDashboard = pathname.startsWith("/dashboard");
   const isAdmin = pathname.startsWith("/admin");
-  const isAuthPage = pathname === "/login" || pathname === "/register";
 
-  // Giriş yapmamışsa korumalı alanları engelle.
+  // Giriş yapmamışsa korumalı alanları engelle (kaba kontrol; DB doğrulaması
+  // sayfa/layout seviyesinde tekrar yapılır).
   if ((isDashboard || isAdmin) && !claims) {
     const url = new URL("/login", req.url);
     url.searchParams.set("next", pathname);
     return NextResponse.redirect(url);
   }
 
-  // Admin alanı yalnızca ADMIN.
+  // Admin alanı yalnızca ADMIN (JWT rolüne göre kaba kontrol).
   if (isAdmin && claims?.role !== "ADMIN") {
     return NextResponse.redirect(new URL("/dashboard", req.url));
   }
 
-  // Giriş yapmış kullanıcı login/register görürse panele gönder.
-  if (isAuthPage && claims) {
-    const dest = claims.role === "ADMIN" ? "/admin" : "/dashboard";
-    return NextResponse.redirect(new URL(dest, req.url));
-  }
-
+  // NOT: Giriş sayfalarında "zaten girişli → panele at" yönlendirmesi
+  // BİLEREK middleware'de YAPILMAZ. Aksi halde DB oturumu silinmiş ama JWT
+  // çerezi hâlâ duran bir kullanıcıda /login ⇄ /panel sonsuz döngüsü oluşur.
+  // Bu kontrol login/register sayfalarında DB doğrulamasıyla yapılır.
   return NextResponse.next();
 }
 
 export const config = {
-  matcher: ["/dashboard/:path*", "/admin/:path*", "/login", "/register"],
+  matcher: ["/dashboard/:path*", "/admin/:path*"],
 };
