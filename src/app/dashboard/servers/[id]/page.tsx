@@ -1,0 +1,161 @@
+import { getOwnedServer } from "@/lib/guards";
+import { db } from "@/lib/db";
+import { getUserOverview } from "@/lib/stats";
+import { StatCard, Card, Badge } from "@/components/ui";
+import { AreaTrend, DonutChart } from "@/components/charts";
+import { Icons } from "@/components/icons";
+import { parseJson, timeAgo } from "@/lib/utils";
+import { featureLabel } from "@/lib/features";
+
+export const dynamic = "force-dynamic";
+
+export default async function ServerOverview({
+  params,
+}: {
+  params: { id: string };
+}) {
+  const { server } = await getOwnedServer(params.id);
+  const overview = await getUserOverview([server.id]);
+
+  const [connections, recentActions] = await Promise.all([
+    db.player.count({ where: { serverId: server.id } }),
+    db.punishAction.findMany({
+      where: { serverId: server.id },
+      orderBy: { createdAt: "desc" },
+      take: 6,
+    }),
+  ]);
+
+  const features = parseJson<string[]>(server.licenseKey?.features ?? "[]", []);
+
+  return (
+    <div className="space-y-6">
+      {/* Bağlantı bilgisi */}
+      {!server.lastSeenAt && (
+        <div className="flex items-start gap-3 rounded-2xl border border-amber-500/20 bg-amber-500/5 px-4 py-3">
+          <Icons.bolt size={18} className="mt-0.5 shrink-0 text-amber-300" />
+          <div className="text-sm">
+            <p className="font-medium text-amber-200">Sunucu henüz bağlanmadı</p>
+            <p className="text-amber-200/70">
+              FiveM kaynağını kurup API token&apos;ını girdiğinde bu sunucu otomatik
+              olarak çevrimiçi olacak. Token için{" "}
+              <a href={`/dashboard/servers/${server.id}/settings`} className="underline">
+                Yapılandırma
+              </a>{" "}
+              sekmesine bak.
+            </p>
+          </div>
+        </div>
+      )}
+
+      {/* Stat kartları */}
+      <div className="grid gap-4 sm:grid-cols-2 xl:grid-cols-4">
+        <StatCard label="Bağlantılar" value={connections.toLocaleString("tr-TR")} icon="activity" accent="brand" />
+        <StatCard label="Toplam Oyuncu" value={overview.totalPlayers.toLocaleString("tr-TR")} icon="users" accent="violet" />
+        <StatCard label="Toplam Ban" value={overview.totalBans} icon="ban" accent="rose" sub={`${overview.activeBans} aktif`} />
+        <StatCard label="Şu An Online" value={`${overview.onlinePlayers}/${server.maxSlots}`} icon="server" accent="emerald" />
+      </div>
+
+      {/* Grafik + donut */}
+      <div className="grid gap-4 lg:grid-cols-3">
+        <Card className="lg:col-span-2">
+          <div className="mb-4 flex items-center justify-between">
+            <div>
+              <h3 className="text-sm font-semibold text-white">Sunucu Analitiği</h3>
+              <p className="text-xs text-slate-500">Son 24 saat</p>
+            </div>
+            <Badge tone="blue" dot>Canlı</Badge>
+          </div>
+          <AreaTrend data={overview.series} />
+        </Card>
+
+        <Card>
+          <h3 className="mb-1 text-sm font-semibold text-white">Tespitler</h3>
+          <p className="mb-3 text-xs text-slate-500">Son 24 saat</p>
+          {overview.detectionsByType.length ? (
+            <DonutChart data={overview.detectionsByType} centerValue={overview.detections24h} centerLabel="tespit" />
+          ) : (
+            <div className="grid h-[200px] place-items-center text-sm text-slate-500">Tespit yok 🎉</div>
+          )}
+        </Card>
+      </div>
+
+      {/* Cezalar + lisans özellikleri + son aksiyonlar */}
+      <div className="grid gap-4 lg:grid-cols-3">
+        <Card>
+          <h3 className="mb-4 text-sm font-semibold text-white">Cezalar (24s)</h3>
+          <div className="space-y-3">
+            <PunishRow label="Uyarı" value={overview.actions.WARN} tone="amber" icon="warn" />
+            <PunishRow label="Kick" value={overview.actions.KICK} tone="blue" icon="kick" />
+            <PunishRow label="Ban" value={overview.actions.BAN} tone="rose" icon="ban" />
+          </div>
+        </Card>
+
+        <Card>
+          <h3 className="mb-4 text-sm font-semibold text-white">Aktif Korumalar</h3>
+          {features.length ? (
+            <div className="flex flex-wrap gap-1.5">
+              {features.map((f) => (
+                <span key={f} className="rounded-md bg-emerald-500/10 px-2 py-1 text-[11px] text-emerald-300 ring-1 ring-inset ring-emerald-500/20">
+                  {featureLabel(f)}
+                </span>
+              ))}
+            </div>
+          ) : (
+            <p className="text-sm text-slate-500">Lisansta özellik tanımlı değil.</p>
+          )}
+        </Card>
+
+        <Card>
+          <h3 className="mb-4 text-sm font-semibold text-white">Son İşlemler</h3>
+          {recentActions.length ? (
+            <ul className="space-y-3">
+              {recentActions.map((a) => (
+                <li key={a.id} className="flex items-start gap-3">
+                  <span className="mt-0.5 grid h-7 w-7 shrink-0 place-items-center rounded-lg bg-white/5 text-slate-300">
+                    <Icons.bolt size={13} />
+                  </span>
+                  <div className="min-w-0">
+                    <p className="truncate text-sm text-slate-200">
+                      {a.type} · {a.playerName}
+                    </p>
+                    <p className="text-xs text-slate-500">{timeAgo(a.createdAt)}</p>
+                  </div>
+                </li>
+              ))}
+            </ul>
+          ) : (
+            <p className="py-6 text-center text-sm text-slate-500">İşlem yok</p>
+          )}
+        </Card>
+      </div>
+    </div>
+  );
+}
+
+function PunishRow({
+  label,
+  value,
+  tone,
+  icon,
+}: {
+  label: string;
+  value: number;
+  tone: "amber" | "blue" | "rose";
+  icon: "warn" | "kick" | "ban";
+}) {
+  const Icon = Icons[icon];
+  const color =
+    tone === "amber" ? "text-amber-300 bg-amber-500/10" : tone === "blue" ? "text-brand-300 bg-brand-500/10" : "text-rose-300 bg-rose-500/10";
+  return (
+    <div className="flex items-center justify-between">
+      <span className="flex items-center gap-2.5 text-sm text-slate-300">
+        <span className={`grid h-8 w-8 place-items-center rounded-lg ${color}`}>
+          <Icon size={15} />
+        </span>
+        {label}
+      </span>
+      <span className="text-lg font-bold text-white">{value}</span>
+    </div>
+  );
+}
