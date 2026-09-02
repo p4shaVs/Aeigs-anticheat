@@ -159,8 +159,25 @@ model Server {
   actions       PunishAction[]
   admins        ServerAdmin[]
   logs          ServerLog[]
+  commands      ServerCommand[]
 
   @@index([ownerId])
+}
+
+// Web konsolundan gönderilen komutlar — FiveM kaynağı çeker ve çalıştırır.
+model ServerCommand {
+  id         String   @id @default(cuid())
+  serverId   String
+  server     Server   @relation(fields: [serverId], references: [id], onDelete: Cascade)
+  command    String
+  issuedBy   String
+  status     String   @default("PENDING") // PENDING | DELIVERED
+  output     String?
+  createdAt  DateTime @default(now())
+  deliveredAt DateTime?
+
+  @@index([serverId, status])
+  @@index([serverId, createdAt])
 }
 
 model ServerAdmin {

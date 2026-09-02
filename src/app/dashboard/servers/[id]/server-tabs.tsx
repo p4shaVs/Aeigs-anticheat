@@ -8,9 +8,14 @@ import { cn } from "@/lib/utils";
 const tabs: { seg: string; label: string; icon: IconName }[] = [
   { seg: "", label: "Genel Bakış", icon: "dashboard" },
   { seg: "players", label: "Oyuncular", icon: "users" },
+  { seg: "map", label: "İnteraktif Harita", icon: "map" },
   { seg: "bans", label: "Yasaklar", icon: "ban" },
+  { seg: "lookup", label: "Sorgulama", icon: "search" },
+  { seg: "rules", label: "Güvenlik Kuralları", icon: "shield" },
+  { seg: "admins", label: "Yöneticiler", icon: "user" },
   { seg: "logs", label: "Günlükler", icon: "logs" },
-  { seg: "settings", label: "Yapılandırma", icon: "config" },
+  { seg: "console", label: "Konsol", icon: "terminal" },
+  { seg: "settings", label: "Ayarlar", icon: "config" },
 ];
 
 export function ServerTabs({ serverId }: { serverId: string }) {

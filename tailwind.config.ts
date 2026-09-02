@@ -57,13 +57,44 @@ const config: Config = {
           from: { opacity: "0", transform: "translateY(6px)" },
           to: { opacity: "1", transform: "translateY(0)" },
         },
+        "slide-up": {
+          from: { opacity: "0", transform: "translateY(24px)" },
+          to: { opacity: "1", transform: "translateY(0)" },
+        },
+        "slide-in": {
+          from: { opacity: "0", transform: "translateX(-18px)" },
+          to: { opacity: "1", transform: "translateX(0)" },
+        },
+        "scale-in": {
+          from: { opacity: "0", transform: "scale(0.96)" },
+          to: { opacity: "1", transform: "scale(1)" },
+        },
+        "page-enter": {
+          from: { opacity: "0", transform: "translateY(14px) scale(0.995)" },
+          to: { opacity: "1", transform: "translateY(0) scale(1)" },
+        },
+        float: {
+          "0%,100%": { transform: "translateY(0)" },
+          "50%": { transform: "translateY(-8px)" },
+        },
         shimmer: {
           "100%": { transform: "translateX(100%)" },
+        },
+        "pulse-ring": {
+          "0%": { boxShadow: "0 0 0 0 rgba(99,102,241,0.4)" },
+          "70%": { boxShadow: "0 0 0 10px rgba(99,102,241,0)" },
+          "100%": { boxShadow: "0 0 0 0 rgba(99,102,241,0)" },
         },
       },
       animation: {
         "fade-in": "fade-in 0.4s ease-out both",
+        "slide-up": "slide-up 0.6s cubic-bezier(0.22,1,0.36,1) both",
+        "slide-in": "slide-in 0.5s cubic-bezier(0.22,1,0.36,1) both",
+        "scale-in": "scale-in 0.4s cubic-bezier(0.22,1,0.36,1) both",
+        "page-enter": "page-enter 0.5s cubic-bezier(0.22,1,0.36,1) both",
+        float: "float 5s ease-in-out infinite",
         shimmer: "shimmer 1.6s infinite",
+        "pulse-ring": "pulse-ring 2s ease-out infinite",
       },
     },
   },

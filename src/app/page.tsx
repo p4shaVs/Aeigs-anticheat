@@ -2,6 +2,7 @@ import Link from "next/link";
 import { SiteHeader, SiteFooter } from "@/components/site-header";
 import { LinkButton, Badge } from "@/components/ui";
 import { Icons } from "@/components/icons";
+import { Reveal } from "@/components/reveal";
 
 export default function HomePage() {
   return (
@@ -143,19 +144,20 @@ function Features() {
         desc="Tespitten yönetime, lisanstan raporlamaya kadar eksiksiz bir anti-cheat ekosistemi."
       />
       <div className="mt-14 grid gap-5 sm:grid-cols-2 lg:grid-cols-3">
-        {items.map((it) => {
+        {items.map((it, i) => {
           const Icon = Icons[it.icon];
           return (
-            <div
+            <Reveal
               key={it.title}
-              className="card group p-6 transition hover:border-brand-500/30 hover:shadow-glow"
+              delay={i * 80}
+              className="card group p-6 transition-transform hover:-translate-y-1 hover:border-brand-500/30 hover:shadow-glow"
             >
-              <span className="grid h-11 w-11 place-items-center rounded-xl bg-brand-gradient text-white shadow-glow">
+              <span className="grid h-11 w-11 place-items-center rounded-xl bg-brand-gradient text-white shadow-glow transition-transform group-hover:scale-110">
                 <Icon size={22} />
               </span>
               <h3 className="mt-4 text-base font-semibold text-white">{it.title}</h3>
               <p className="mt-2 text-sm leading-relaxed text-slate-400">{it.text}</p>
-            </div>
+            </Reveal>
           );
         })}
       </div>
@@ -239,7 +241,7 @@ function PanelPreview() {
         title="Sunucunuzu tarayıcıdan yönetin"
         desc="Oyuncular, banlar, canlı harita, analitik ve daha fazlası — hepsi tek modern panelde."
       />
-      <div className="mt-12 overflow-hidden rounded-2xl border border-white/10 bg-base-850 shadow-card">
+      <Reveal className="mt-12 overflow-hidden rounded-2xl border border-white/10 bg-base-850 shadow-card">
         <div className="flex items-center gap-2 border-b border-white/5 px-4 py-3">
           <span className="h-3 w-3 rounded-full bg-rose-500/70" />
           <span className="h-3 w-3 rounded-full bg-amber-500/70" />
@@ -272,12 +274,12 @@ function PanelPreview() {
             </div>
           </div>
         </div>
-      </div>
-      <div className="mt-8 text-center">
+      </Reveal>
+      <Reveal delay={120} className="mt-8 text-center">
         <LinkButton href="/register" icon="arrowRight">
           Paneli Ücretsiz Dene
         </LinkButton>
-      </div>
+      </Reveal>
     </section>
   );
 }
@@ -287,7 +289,7 @@ function PanelPreview() {
 function CtaBand() {
   return (
     <section className="mx-auto max-w-6xl px-4 pb-24 sm:px-6">
-      <div className="relative overflow-hidden rounded-3xl border border-brand-500/20 bg-gradient-to-br from-brand-600/20 via-base-850 to-accent-violet/10 p-10 text-center sm:p-16">
+      <Reveal className="relative overflow-hidden rounded-3xl border border-brand-500/20 bg-gradient-to-br from-brand-600/20 via-base-850 to-accent-violet/10 p-10 text-center sm:p-16">
         <div className="pointer-events-none absolute -right-20 -top-20 h-60 w-60 rounded-full bg-brand-500/20 blur-3xl" />
         <h2 className="text-3xl font-bold tracking-tight text-white sm:text-4xl">
           Sunucunuzu bugün koruma altına alın
@@ -307,7 +309,7 @@ function CtaBand() {
             veya paketleri incele →
           </Link>
         </div>
-      </div>
+      </Reveal>
     </section>
   );
 }
