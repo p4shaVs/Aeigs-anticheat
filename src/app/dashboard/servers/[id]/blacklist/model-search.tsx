@@ -208,9 +208,14 @@ function ModelCard({
 }: {
   m: GtaModel; listed: boolean; busy: boolean; imgBase: string; onKara: () => void; onBeyaz: () => void;
 }) {
-  const [imgError, setImgError] = useState(false);
+  // Görsel adayları: imgBase varsa png → jpg → webp sırayla denenir, hepsi
+  // başarısızsa kategori ikonu gösterilir. imgBase boşsa doğrudan ikon.
+  const candidates = imgBase
+    ? ["png", "jpg", "webp"].map((ext) => `${imgBase}/${m.kind}/${m.name}.${ext}`)
+    : [];
+  const [imgIdx, setImgIdx] = useState(0);
   const Icon = Icons[KIND_ICON[m.kind] ?? "cube"];
-  const src = imgBase ? `${imgBase}/${m.kind}/${m.name}.png` : "";
+  const src = candidates[imgIdx];
 
   return (
     <div className="overflow-hidden rounded-2xl border border-white/5 bg-base-850/60 transition hover:border-white/10">
@@ -218,9 +223,9 @@ function ModelCard({
         <span className="absolute left-2.5 top-2.5 z-10 rounded-md bg-black/50 px-2 py-0.5 text-[10px] font-semibold uppercase tracking-wide text-emerald-300 backdrop-blur">
           {MODEL_KIND_META[m.kind].label}
         </span>
-        {src && !imgError ? (
+        {src ? (
           // eslint-disable-next-line @next/next/no-img-element
-          <img src={src} alt={m.label} className="h-full w-full object-cover" onError={() => setImgError(true)} loading="lazy" />
+          <img src={src} alt={m.label} className="h-full w-full object-cover" onError={() => setImgIdx((i) => i + 1)} loading="lazy" />
         ) : (
           <>
             <div className="absolute inset-0 bg-grid-faint [background-size:16px_16px] opacity-25" />
