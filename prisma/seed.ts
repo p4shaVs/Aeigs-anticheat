@@ -119,7 +119,7 @@ async function main() {
       ownerId: customer.id,
       status: "ACTIVE",
       features: premium!.features,
-      maxServers: 3,
+      maxServers: 1,
       activatedAt: new Date(),
       expiresAt: new Date(Date.now() + 30 * 24 * 60 * 60 * 1000),
       createdById: admin.id,

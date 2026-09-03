@@ -1,10 +1,10 @@
 import { getOwnedServer } from "@/lib/guards";
 import { db } from "@/lib/db";
 import { getUserOverview } from "@/lib/stats";
-import { StatCard, Card, Badge } from "@/components/ui";
+import { StatCard, Card, Badge, PageHeader, StatusBadge, LinkButton } from "@/components/ui";
 import { AreaTrend, DonutChart } from "@/components/charts";
 import { Icons } from "@/components/icons";
-import { parseJson, timeAgo } from "@/lib/utils";
+import { parseJson, timeAgo, relativeDays } from "@/lib/utils";
 import { featureLabel } from "@/lib/features";
 
 export const dynamic = "force-dynamic";
@@ -30,6 +30,19 @@ export default async function ServerOverview({
 
   return (
     <div className="space-y-6">
+      <PageHeader
+        title={server.name}
+        description={`${server.ip ?? "IP ayarlanmadı"} · AC ${server.acVersion ?? "—"} · Lisans: ${relativeDays(server.licenseKey?.expiresAt)}`}
+        actions={
+          <>
+            <StatusBadge status={server.status} />
+            <LinkButton href={`/dashboard/servers/${server.id}/settings`} variant="secondary" icon="download">
+              İndir
+            </LinkButton>
+          </>
+        }
+      />
+
       {/* Bağlantı bilgisi */}
       {!server.lastSeenAt && (
         <div className="flex items-start gap-3 rounded-2xl border border-amber-500/20 bg-amber-500/5 px-4 py-3">

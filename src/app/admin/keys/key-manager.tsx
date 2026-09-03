@@ -53,7 +53,6 @@ export function KeyManager({
   const [productId, setProductId] = useState("");
   const [ownerEmail, setOwnerEmail] = useState("");
   const [selected, setSelected] = useState<Set<string>>(new Set());
-  const [maxServers, setMaxServers] = useState("1");
   const [quantity, setQuantity] = useState("1");
   const [lifetime, setLifetime] = useState(true);
   const [expiresInDays, setExpiresInDays] = useState("30");
@@ -88,7 +87,7 @@ export function KeyManager({
           productId: productId || undefined,
           ownerEmail: ownerEmail || undefined,
           features: Array.from(selected),
-          maxServers: Number(maxServers) || 1,
+          maxServers: 1, // her anahtar tek sunucu için
           quantity: Number(quantity) || 1,
           expiresInDays: lifetime ? null : Number(expiresInDays) || 30,
           note: note || undefined,
@@ -110,7 +109,6 @@ export function KeyManager({
     setSelected(new Set());
     setProductId("");
     setOwnerEmail("");
-    setMaxServers("1");
     setQuantity("1");
     setLifetime(true);
     setNote("");
@@ -351,15 +349,10 @@ export function KeyManager({
               </div>
             </div>
 
-            <div className="grid grid-cols-2 gap-3">
-              <div>
-                <label className="label">Maks. Sunucu</label>
-                <input className="input" type="number" min={1} value={maxServers} onChange={(e) => setMaxServers(e.target.value)} />
-              </div>
-              <div>
-                <label className="label">Adet</label>
-                <input className="input" type="number" min={1} max={100} value={quantity} onChange={(e) => setQuantity(e.target.value)} />
-              </div>
+            <div>
+              <label className="label">Adet</label>
+              <input className="input" type="number" min={1} max={100} value={quantity} onChange={(e) => setQuantity(e.target.value)} />
+              <p className="mt-1 text-xs text-slate-500">Her anahtar tek bir sunucu için geçerlidir.</p>
             </div>
 
             <div>

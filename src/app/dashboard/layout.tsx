@@ -1,5 +1,6 @@
 import { redirect } from "next/navigation";
 import { getCurrentUser } from "@/lib/session";
+import { db } from "@/lib/db";
 import { PanelShell, type NavSection } from "@/components/panel-shell";
 
 const nav: NavSection[] = [
@@ -36,8 +37,15 @@ export default async function DashboardLayout({
   const user = await getCurrentUser();
   if (!user) redirect("/login?next=/dashboard");
 
+  // Sunucu içi menü (switcher) için kullanıcının sunucuları.
+  const servers = await db.server.findMany({
+    where: { ownerId: user.id },
+    orderBy: { createdAt: "asc" },
+    select: { id: true, name: true, status: true },
+  });
+
   return (
-    <PanelShell nav={nav} user={user} variant="customer">
+    <PanelShell nav={nav} user={user} servers={servers} variant="customer">
       {children}
     </PanelShell>
   );

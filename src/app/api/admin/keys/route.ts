@@ -60,7 +60,7 @@ export const POST = handler(async (req: NextRequest) => {
         ownerId,
         status: "UNUSED",
         features: JSON.stringify(finalFeatures),
-        maxServers: body.maxServers,
+        maxServers: 1, // her anahtar tek sunucu için
         expiresAt,
         note: body.note,
         createdById: admin.id,
