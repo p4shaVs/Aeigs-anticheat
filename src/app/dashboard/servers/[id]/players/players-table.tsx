@@ -122,7 +122,8 @@ export function PlayersTable({
           <thead>
             <tr className="border-b border-white/5 text-left text-xs uppercase tracking-wide text-slate-500">
               <th className="px-4 py-3 font-medium">Oyuncu</th>
-              <th className="px-4 py-3 font-medium">Identifier</th>
+              <th className="px-4 py-3 font-medium">License</th>
+              <th className="px-4 py-3 font-medium">Discord</th>
               <th className="px-4 py-3 font-medium">Güven</th>
               <th className="px-4 py-3 font-medium">Son görülme</th>
               <th className="px-4 py-3 text-right font-medium">İşlemler</th>
@@ -143,8 +144,13 @@ export function PlayersTable({
                   </div>
                 </td>
                 <td className="px-4 py-3">
+                  <span className="font-mono text-xs text-slate-500" title={p.license ?? ""}>
+                    {p.license ? p.license.replace("license:", "").slice(0, 14) + "…" : "—"}
+                  </span>
+                </td>
+                <td className="px-4 py-3">
                   <span className="font-mono text-xs text-slate-500">
-                    {p.license ?? p.steam ?? p.discord ?? "—"}
+                    {p.discord ? p.discord.replace("discord:", "") : "—"}
                   </span>
                 </td>
                 <td className="px-4 py-3">
@@ -162,7 +168,7 @@ export function PlayersTable({
             ))}
             {filtered.length === 0 && (
               <tr>
-                <td colSpan={5} className="px-4 py-10 text-center text-slate-500">
+                <td colSpan={6} className="px-4 py-10 text-center text-slate-500">
                   Eşleşen oyuncu yok.
                 </td>
               </tr>

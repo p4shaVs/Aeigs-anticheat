@@ -4,6 +4,7 @@ import { db } from "@/lib/db";
 import { handler, ok, ApiError } from "@/lib/api";
 import { requireOwnedServer } from "@/lib/api-guards";
 import { punishSchema } from "@/lib/validation";
+import { generateBanCode } from "@/lib/keys";
 import { rateLimit } from "@/lib/ratelimit";
 import { audit } from "@/lib/audit";
 import { clientIp } from "@/lib/session";
@@ -52,6 +53,7 @@ export const POST = handler(
           data: {
             serverId: server.id,
             playerId: player.id,
+            code: generateBanCode(),
             license: player.license,
             steam: player.steam,
             discord: player.discord,

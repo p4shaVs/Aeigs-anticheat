@@ -36,3 +36,8 @@ export function generateServerToken(): { token: string; hash: string } {
 export function hashToken(token: string): string {
   return createHmac("sha256", env.LICENSE_HMAC_SECRET).update(token).digest("hex");
 }
+
+/** Oyuncuya gösterilecek kısa ban kodu (örn. AC-7K3QP9). */
+export function generateBanCode(): string {
+  return `AC-${randomBlock(6)}`;
+}

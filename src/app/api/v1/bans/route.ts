@@ -25,6 +25,7 @@ export const GET = handler(async (req: NextRequest) => {
     where: { serverId: server.id, active: true },
     select: {
       id: true,
+      code: true,
       license: true,
       steam: true,
       discord: true,

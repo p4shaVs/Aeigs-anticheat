@@ -86,7 +86,7 @@ export function SiteFooter() {
               links={[
                 { href: "/docs", label: "Dokümantasyon" },
                 { href: "/docs#api", label: "API Referansı" },
-                { href: "/status", label: "Durum" },
+                { href: "/ban", label: "Ban Sorgula" },
               ]}
             />
             <FooterCol

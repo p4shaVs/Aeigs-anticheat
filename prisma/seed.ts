@@ -242,6 +242,7 @@ async function main() {
       data: {
         serverId: server.id,
         playerId: p.id,
+        code: `AC-${block(6)}`,
         license: p.license,
         playerName: p.name,
         reason: pick(["Aimbot kullanımı", "Silent aim", "Menu/injection", "Godmode", "Money exploit"]),

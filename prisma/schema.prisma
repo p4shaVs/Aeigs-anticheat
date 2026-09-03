@@ -160,6 +160,7 @@ model Server {
   admins        ServerAdmin[]
   logs          ServerLog[]
   commands      ServerCommand[]
+  resources     ServerResource[]
 
   @@index([ownerId])
 }
@@ -228,6 +229,9 @@ model Ban {
   playerId    String?
   player      Player?  @relation(fields: [playerId], references: [id])
 
+  // Oyuncuya gösterilen kısa ban kodu (ban sebebini sorgulamak için)
+  code        String?  @unique
+
   // İdentifikasyon anlık görüntüsü (oyuncu silinse de ban kalır)
   license     String?
   steam       String?
@@ -246,6 +250,19 @@ model Ban {
 
   @@index([serverId, active])
   @@index([license])
+}
+
+// Sunucuda çalışan FiveM kaynakları (resource) — panelden görüntülenir/yönetilir.
+model ServerResource {
+  id         String   @id @default(cuid())
+  serverId   String
+  server     Server   @relation(fields: [serverId], references: [id], onDelete: Cascade)
+  name       String
+  state      String   @default("stopped") // started | stopped
+  updatedAt  DateTime @updatedAt
+
+  @@unique([serverId, name])
+  @@index([serverId])
 }
 
 // AntiCheat tespitleri (aimbot, silent aim, illegal spawn vb.)

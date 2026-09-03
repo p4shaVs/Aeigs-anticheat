@@ -4,6 +4,7 @@ import { db } from "@/lib/db";
 import { handler, ok, ApiError } from "@/lib/api";
 import { authenticateServer } from "@/lib/server-auth";
 import { rateLimit } from "@/lib/ratelimit";
+import { generateBanCode } from "@/lib/keys";
 import { parseJson } from "@/lib/utils";
 
 // Kaynak, bir hile tespitini raporlar. severity CRITICAL ve lisansta auto_ban
@@ -72,6 +73,7 @@ export const POST = handler(async (req: NextRequest) => {
         data: {
           serverId: server.id,
           playerId: player.id,
+          code: generateBanCode(),
           license: player.license,
           steam: player.steam,
           discord: player.discord,
