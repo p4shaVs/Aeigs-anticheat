@@ -1,9 +1,18 @@
 "use client";
 
-import { useEffect, useMemo, useRef, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { useRouter } from "next/navigation";
+import dynamic from "next/dynamic";
 import { Icons } from "@/components/icons";
 import { cn } from "@/lib/utils";
+import type { Marker3D } from "./map3d";
+
+const Map3D = dynamic(() => import("./map3d"), {
+  ssr: false,
+  loading: () => (
+    <div className="absolute inset-0 grid place-items-center text-sm text-slate-500">Harita yükleniyor…</div>
+  ),
+});
 
 export interface MapPlayer {
   id: string;
@@ -48,12 +57,6 @@ const ACTIVITY_LABEL: Record<string, string> = {
 type ViewMode = "iso" | "top" | "city";
 type FilterMode = "heat" | "risky" | "cluster";
 
-const VIEW_TRANSFORM: Record<ViewMode, string> = {
-  iso: "rotateX(52deg) rotateZ(0deg) scale(0.92)",
-  top: "rotateX(0deg) scale(1)",
-  city: "rotateX(54deg) rotateZ(0deg) scale(1.7) translate(6%, -14%)",
-};
-
 export function MapView({ serverId, players, maxSlots }: { serverId: string; players: MapPlayer[]; maxSlots: number }) {
   const router = useRouter();
   const [view, setView] = useState<ViewMode>("iso");
@@ -66,10 +69,6 @@ export function MapView({ serverId, players, maxSlots }: { serverId: string; pla
   const [maxPlaytimeH, setMaxPlaytimeH] = useState(24);
   const [recentOnly, setRecentOnly] = useState(false);
   const [newOnly, setNewOnly] = useState(false);
-  const [region, setRegion] = useState<null | { x1: number; y1: number; x2: number; y2: number }>(null);
-  const [drawing, setDrawing] = useState(false);
-  const planeRef = useRef<HTMLDivElement>(null);
-  const mapTile = process.env.NEXT_PUBLIC_MAP_TILE ?? "";
 
   useEffect(() => {
     if (!live) return;
@@ -94,29 +93,29 @@ export function MapView({ serverId, players, maxSlots }: { serverId: string; pla
     if (p.posX != null && p.posY != null) return worldToPct(p.posX, p.posY);
     return fallbackPos(p.id);
   }
-  function inRegion(x: number, y: number) {
-    if (!region) return true;
-    return x >= Math.min(region.x1, region.x2) && x <= Math.max(region.x1, region.x2) &&
-      y >= Math.min(region.y1, region.y2) && y <= Math.max(region.y1, region.y2);
-  }
 
-  const shown = filtered.filter((p) => { const c = coordOf(p); return inRegion(c.x, c.y); });
+  const shown = filtered;
   const shownIds = new Set(shown.map((p) => p.id));
   const sel = players.find((p) => p.id === selected) ?? null;
 
-  // Bölge çizimi (drag)
-  function planePoint(e: React.MouseEvent) {
-    const el = planeRef.current;
-    if (!el) return { x: 50, y: 50 };
-    const r = el.getBoundingClientRect();
-    return { x: ((e.clientX - r.left) / r.width) * 100, y: ((e.clientY - r.top) / r.height) * 100 };
-  }
+  // 3D harita için işaretçiler (tüm oyuncular; filtre dışındakiler soluk)
+  const markers: Marker3D[] = useMemo(
+    () =>
+      players.map((p) => {
+        const c = coordOf(p);
+        return { id: p.id, u: c.x / 100, v: c.y / 100, color: threatColor(p.trustScore), selected: p.id === selected, dim: !shownIds.has(p.id) || (mode === "risky" && p.trustScore >= 40) };
+      }),
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+    [players, selected, shownIds.size, mode, minTrust, maxTrust]
+  );
 
   return (
     <div className="grid gap-4 lg:grid-cols-[1fr_340px]">
-      {/* 3D Harita */}
-      <div className="relative overflow-hidden rounded-2xl border border-white/10 bg-gradient-to-b from-[#1b3a5c] via-[#12233a] to-[#0a1119]"
-        style={{ aspectRatio: "10 / 9", perspective: "1400px" }}>
+      {/* 3D Harita (three.js — gerçek GTA V uydu dokusu + yükseklik) */}
+      <div className="relative overflow-hidden rounded-2xl border border-white/10 bg-[#0a1119]"
+        style={{ aspectRatio: "10 / 9" }}>
+        <Map3D markers={markers} view={view} onSelect={(id) => setSelected((s) => (s === id ? null : id))} />
+
         {/* Görünüm anahtarları */}
         <div className="absolute right-3 top-3 z-30 flex items-center gap-0.5 rounded-xl border border-white/10 bg-base-950/70 p-1 backdrop-blur">
           {([["iso", "İzometrik"], ["top", "Yukarıdan aşağıya"], ["city", "Şehir"]] as [ViewMode, string][]).map(([k, label]) => (
@@ -134,67 +133,8 @@ export function MapView({ serverId, players, maxSlots }: { serverId: string; pla
             live ? "border-emerald-500/30 bg-emerald-500/10 text-emerald-300" : "border-white/10 bg-base-950/70 text-slate-400")}>
           <span className={cn("h-1.5 w-1.5 rounded-full", live && "animate-pulse bg-emerald-400")} /> {live ? "CANLI" : "Duraklatıldı"}
         </button>
-
-        {/* 3D düzlem */}
-        <div className="absolute inset-0 grid place-items-center" style={{ transformStyle: "preserve-3d" }}>
-          <div
-            ref={planeRef}
-            className="relative h-[80%] w-[80%] rounded-xl transition-transform duration-700 ease-out"
-            style={{ transform: VIEW_TRANSFORM[view], transformStyle: "preserve-3d", boxShadow: "0 60px 80px -20px rgba(0,0,0,0.7)" }}
-            onMouseDown={(e) => { if (drawing) { const p = planePoint(e); setRegion({ x1: p.x, y1: p.y, x2: p.x, y2: p.y }); } }}
-            onMouseMove={(e) => { if (drawing && region) { const p = planePoint(e); setRegion((r) => r && ({ ...r, x2: p.x, y2: p.y })); } }}
-            onMouseUp={() => { if (drawing) setDrawing(false); }}
-          >
-            {/* Zemin: gerçek harita dokusu (varsa) veya stilize Los Santos */}
-            {mapTile ? (
-              // eslint-disable-next-line @next/next/no-img-element
-              <img src={mapTile} alt="harita" className="absolute inset-0 h-full w-full rounded-xl object-cover" />
-            ) : (
-              <LosSantos />
-            )}
-            {/* Yükseklik hissi: dağ gölgesi */}
-            <div className="pointer-events-none absolute left-[46%] top-[6%] h-[34%] w-[40%] rounded-[50%] bg-gradient-to-b from-white/10 to-transparent blur-2xl" />
-
-            {/* Bölge dikdörtgeni */}
-            {region && (
-              <div className="pointer-events-none absolute border-2 border-brand-400/70 bg-brand-400/10"
-                style={{ left: `${Math.min(region.x1, region.x2)}%`, top: `${Math.min(region.y1, region.y2)}%`,
-                  width: `${Math.abs(region.x2 - region.x1)}%`, height: `${Math.abs(region.y2 - region.y1)}%` }} />
-            )}
-
-            {/* Isı haritası blobları */}
-            {mode === "heat" && shown.map((p) => {
-              const { x, y } = coordOf(p);
-              return <span key={"h" + p.id} className="pointer-events-none absolute -translate-x-1/2 -translate-y-1/2 rounded-full blur-md"
-                style={{ left: `${x}%`, top: `${y}%`, width: 42, height: 42, background: threatColor(p.trustScore), opacity: 0.5 }} />;
-            })}
-
-            {/* Marker pinleri (kameraya dik dururlar) */}
-            {players.map((p) => {
-              const { x, y } = coordOf(p);
-              const active = shownIds.has(p.id);
-              const isSel = selected === p.id;
-              return (
-                <button key={p.id} onClick={() => setSelected(isSel ? null : p.id)}
-                  className={cn("group absolute -translate-x-1/2 -translate-y-1/2 transition-all duration-700",
-                    active ? "opacity-100" : "pointer-events-none opacity-0")}
-                  style={{ left: `${x}%`, top: `${y}%`, transformStyle: "preserve-3d" }} title={p.name}>
-                  <span className="block origin-bottom" style={{ transform: view === "top" ? "none" : "rotateX(-52deg)" }}>
-                    {mode !== "heat" && (
-                      <span className={cn("block rounded-full ring-2 ring-black/50 transition-transform group-hover:scale-150", isSel && "scale-[1.6] animate-pulse-ring")}
-                        style={{ width: isSel ? 13 : 9, height: isSel ? 13 : 9, background: threatColor(p.trustScore),
-                          boxShadow: `0 0 10px ${threatColor(p.trustScore)}` }} />
-                    )}
-                    {isSel && (
-                      <span className="absolute left-1/2 top-full mt-1 -translate-x-1/2 whitespace-nowrap rounded-lg border border-white/10 bg-base-850 px-2 py-1 text-[11px] text-white shadow-card">
-                        {p.name}
-                      </span>
-                    )}
-                  </span>
-                </button>
-              );
-            })}
-          </div>
+        <div className="absolute bottom-3 right-3 z-20 rounded-lg border border-white/10 bg-base-950/60 px-2.5 py-1 text-[10px] text-slate-500 backdrop-blur">
+          Döndür: sürükle · Yakınlaş: tekerlek
         </div>
       </div>
 
@@ -221,18 +161,6 @@ export function MapView({ serverId, players, maxSlots }: { serverId: string; pla
           <div className="relative mb-3">
             <Icons.search size={14} className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-500" />
             <input className="input h-9 pl-9 text-sm" placeholder="Oyuncu veya Discord'da arama yapın…" value={query} onChange={(e) => setQuery(e.target.value)} />
-          </div>
-
-          <div className="mb-3 flex gap-1.5">
-            <button onClick={() => { setDrawing(true); setRegion(null); }}
-              className={cn("flex flex-1 items-center justify-center gap-1.5 rounded-lg border px-3 py-2 text-xs font-medium transition",
-                drawing ? "border-brand-500/50 bg-brand-500/10 text-white" : "border-white/10 text-slate-300 hover:bg-white/5")}>
-              <Icons.map size={14} /> Bölge seçin
-            </button>
-            <button onClick={() => { setRegion(null); setDrawing(false); }} title="Bölgeyi temizle"
-              className="grid h-auto w-10 place-items-center rounded-lg border border-white/10 text-slate-400 hover:bg-white/5">
-              <Icons.x size={14} />
-            </button>
           </div>
 
           {/* İtibar puanı aralığı */}
@@ -383,36 +311,5 @@ function Info({ label, value }: { label: string; value: string }) {
       <div className="text-[10px] uppercase tracking-wide text-slate-500">{label}</div>
       <div className="truncate font-mono text-slate-300">{value}</div>
     </div>
-  );
-}
-
-function LosSantos() {
-  return (
-    <svg viewBox="0 0 100 100" className="absolute inset-0 h-full w-full rounded-xl" preserveAspectRatio="none">
-      <defs>
-        <linearGradient id="land3d" x1="0" y1="0" x2="1" y2="1">
-          <stop offset="0%" stopColor="#3a4a34" />
-          <stop offset="55%" stopColor="#2b3a28" />
-          <stop offset="100%" stopColor="#20301f" />
-        </linearGradient>
-        <radialGradient id="mtn" cx="55%" cy="26%" r="30%">
-          <stop offset="0%" stopColor="#6b7d5c" />
-          <stop offset="100%" stopColor="#33422c" />
-        </radialGradient>
-      </defs>
-      <rect width="100" height="100" fill="#12283f" />
-      <path d="M28 8 L58 5 L76 14 L84 30 L88 48 L82 64 L88 78 L80 94 L58 99 L42 96 L38 84 L28 80 L22 66 L28 52 L20 42 L26 24 Z"
-        fill="url(#land3d)" stroke="#485a3c" strokeWidth="0.5" />
-      <ellipse cx="58" cy="26" rx="20" ry="14" fill="url(#mtn)" opacity="0.9" />
-      <path d="M46 90 L58 88 L62 97 L50 98 Z" fill="#16241c" />
-      <g stroke="#556644" strokeWidth="0.6" fill="none" opacity="0.7">
-        <path d="M34 16 L70 22 L80 46 L72 72 L64 96" />
-        <path d="M28 42 L52 48 L80 54" />
-      </g>
-      <g stroke="#3f5238" strokeWidth="0.22" opacity="0.7">
-        {Array.from({ length: 8 }).map((_, i) => <line key={"h" + i} x1={48} y1={66 + i * 4} x2={74} y2={62 + i * 4} />)}
-        {Array.from({ length: 7 }).map((_, i) => <line key={"v" + i} x1={50 + i * 3.4} y1={66} x2={52 + i * 3.4} y2={96} />)}
-      </g>
-    </svg>
   );
 }
