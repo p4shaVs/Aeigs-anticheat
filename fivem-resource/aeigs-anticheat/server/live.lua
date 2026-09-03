@@ -237,15 +237,23 @@ end)
 
 -- ---------------------------------------------------------------------------
 -- Ekran görüntüsü istekleri (panelden) — poll et, hedefe tetikle
+-- Yükleme hedefi: özel host ayarlanmadıysa panelin dahili ucu kullanılır.
 -- ---------------------------------------------------------------------------
+local function ssUploadBase()
+  if Config.ScreenshotUploadUrl and Config.ScreenshotUploadUrl ~= '' then
+    return Config.ScreenshotUploadUrl
+  end
+  return (Config.ApiBase or '') .. '/screenshot/upload'
+end
+
 local function pollScreenshots()
-  if Config.ScreenshotUploadUrl == '' then return end
   Aeigs.request('/screenshot/pending', 'GET', nil, function(ok, data)
     if not ok or not data or not data.requests then return end
     for _, r in ipairs(data.requests) do
       local target = Aeigs.findByLicense(r.playerLicense)
       if target then
-        TriggerClientEvent('aeigs:screenshot', target, Config.ScreenshotUploadUrl, r.id, nil)
+        local url = ssUploadBase() .. '?rid=' .. r.id
+        TriggerClientEvent('aeigs:screenshot', target, url, r.id, nil)
       else
         Aeigs.request('/screenshot/result', 'POST', { id = r.id, failed = true }, nil)
       end
