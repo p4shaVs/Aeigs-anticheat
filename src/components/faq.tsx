@@ -6,28 +6,36 @@ import { cn } from "@/lib/utils";
 
 const ITEMS = [
   {
-    q: "Aeigs Anti-Cheat nasıl çalışır?",
-    a: "Sunucu taraflı bir kaynak (resource) olarak çalışır; client'a güvenmez. Aimbot, silent aim, injection, godmode gibi hileleri gerçek zamanlı tespit eder ve web panelinden yönetmeni sağlar.",
+    q: "Kurulum süreci nasıl işliyor?",
+    a: "Lisansını etkinleştirip kaynağı (resource) sunucuna ekliyorsun, config'e API adresi ve token'ını giriyorsun. Sunucuyu başlatınca panelde çevrimiçi görünüyor — ortalama 5 dakika.",
   },
   {
-    q: "Kurulum ne kadar sürer?",
-    a: "Ortalama 5 dakika. Lisansını etkinleştirip kaynağı sunucuna ekliyorsun, config'e API adresi ve token'ını giriyorsun, sunucuyu başlatınca panelde çevrimiçi görünüyor.",
+    q: "Aeigs Anti-Cheat sunucu performansımı etkiler mi?",
+    a: "Hayır. Optimize edilmiş sunucu taraflı yapı ile 5ms altı işlem süresi hedeflenir; sunucuna minimum yük bindirir.",
   },
   {
-    q: "Performansı etkiler mi?",
-    a: "Hayır. Optimize edilmiş yapı ile 5ms altı işlem süresi hedeflenir; sunucuna minimum yük bindirir.",
+    q: "Aeigs hangi tür hileleri tespit edebilir?",
+    a: "Aimbot, silent aim, overlay/ESP, godmode, spoofer, illegal weapon/vehicle/object spawn, resource injection, event exploit ve daha fazlası — hem imza hem davranış tabanlı.",
+  },
+  {
+    q: "Müşteri desteği sunuyor musunuz?",
+    a: "Evet, 7/24 Discord desteği. Kurulum ve yapılandırmada ekibimiz yanında.",
+  },
+  {
+    q: "Deneme sürümü var mı?",
+    a: "Evet. Canlı Demo bölümünden demo hesabıyla tüm paneli kaydolmadan inceleyebilirsin.",
+  },
+  {
+    q: "Anti-cheat'i ne sıklıkla güncelliyorsunuz?",
+    a: "Yeni hile ve exploit'lere karşı düzenli güncellemeler yayınlarız; kritik durumlarda anında yama geçeriz.",
+  },
+  {
+    q: "Aeigs her FiveM framework'ü ile uyumlu mu?",
+    a: "Evet. ESX, QBCore, QBox ve standalone dahil yaygın framework'lerle uyumlu çalışır.",
   },
   {
     q: "Web panelinden oyuncu banlayabilir miyim?",
-    a: "Evet. Oyuncuları web panelinden banlayabilir, kickleyebilir, uyarabilir; ban geçmişini ve alt hesapları sorgulayabilirsin. Komutlar sunucuya anında iletilir.",
-  },
-  {
-    q: "Lisansımı başka sunucuda kullanabilir miyim?",
-    a: "Lisansın izin verdiği sunucu limiti kadar kullanabilirsin. Panelden istediğin zaman sunucu ekleyip yönetebilirsin.",
-  },
-  {
-    q: "Demo deneyebilir miyim?",
-    a: "Evet, aşağıdaki Canlı Demo bölümünden demo hesabıyla tüm paneli inceleyebilirsin.",
+    a: "Evet. Web panelinden banla, kickle, uyar; ban geçmişini ve alt hesapları sorgula. Komutlar sunucuya anında iletilir.",
   },
 ];
 

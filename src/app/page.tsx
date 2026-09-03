@@ -1,10 +1,12 @@
 import Link from "next/link";
 import { SiteHeader, SiteFooter } from "@/components/site-header";
-import { LinkButton, Badge } from "@/components/ui";
+import { LinkButton } from "@/components/ui";
 import { Icons } from "@/components/icons";
 import { Reveal } from "@/components/reveal";
 import { HeroParallax } from "@/components/hero-parallax";
 import { Faq } from "@/components/faq";
+import { Testimonials } from "@/components/testimonials";
+import { PricingTiers } from "@/components/pricing-tiers";
 
 export default function HomePage() {
   return (
@@ -12,14 +14,11 @@ export default function HomePage() {
       <SiteHeader />
       <main>
         <Hero />
-        <LogoStrip />
-        <FeatureRows />
-        <StatsBand />
-        <Detection />
-        <DemoSection />
-        <PricingTeaser />
+        <Features />
+        <TestimonialsSection />
         <FaqSection />
-        <CtaBand />
+        <PricingSection />
+        <NeedHelp />
       </main>
       <SiteFooter />
     </div>
@@ -31,47 +30,41 @@ export default function HomePage() {
 function Hero() {
   return (
     <section className="relative">
-      <div className="pointer-events-none absolute inset-0 -z-10 bg-grid-faint [background-size:44px_44px] [mask-image:radial-gradient(ellipse_at_top,black,transparent_75%)]" />
-      <div className="mx-auto grid max-w-6xl items-center gap-12 px-4 pb-20 pt-16 sm:px-6 lg:grid-cols-2 lg:pt-24">
+      <div className="pointer-events-none absolute inset-0 -z-10 bg-grid-faint [background-size:46px_46px] [mask-image:radial-gradient(ellipse_at_top_right,black,transparent_70%)]" />
+      <div className="mx-auto grid max-w-6xl items-center gap-10 px-4 pb-24 pt-16 sm:px-6 lg:grid-cols-2 lg:pt-24">
         <div>
-          <div className="mb-5 inline-flex animate-fade-in items-center gap-2 rounded-full border border-white/10 bg-white/5 px-4 py-1.5 text-xs font-medium text-slate-300">
-            <span className="flex h-1.5 w-1.5 rounded-full bg-emerald-400 shadow-[0_0_8px] shadow-emerald-400" />
-            v4.7 — Yeni tespit motoru yayında
-          </div>
-          <h1 className="animate-slide-up text-4xl font-extrabold leading-[1.08] tracking-tight text-white sm:text-6xl">
-            FiveM için{" "}
+          <h1 className="animate-slide-up text-5xl font-extrabold leading-[1.05] tracking-tight text-white sm:text-6xl">
+            Aeigs{" "}
             <span className="bg-gradient-to-r from-brand-400 via-brand-300 to-accent-violet bg-clip-text text-transparent">
-              en gelişmiş
-            </span>{" "}
-            anti-cheat
+              Anti-Cheat
+            </span>
           </h1>
-          <p className="mt-6 max-w-xl animate-slide-up text-lg text-slate-400 [animation-delay:80ms]">
-            Aimbot, silent aim, injection ve exploit&apos;leri gerçek zamanlı
-            yakala. Oyuncuları web panelinden yönet, banla ve tüm sunucunu tek
-            yerden kontrol et.
+          <p className="mt-6 max-w-lg animate-slide-up text-lg text-slate-400 [animation-delay:80ms]">
+            FiveM için <em className="font-semibold not-italic text-slate-200">en gelişmiş</em>{" "}
+            anti-cheat — hilecileri sunucundan uzak tutmak için tasarlandı.
           </p>
           <div className="mt-8 flex animate-slide-up flex-col gap-3 [animation-delay:160ms] sm:flex-row">
-            <LinkButton href="/pricing" icon="cart" className="px-6 py-3 text-base">
-              Hemen Satın Al
+            <LinkButton href="/pricing" icon="bolt" className="px-6 py-3 text-base">
+              Fiyatlandırma
             </LinkButton>
-            <LinkButton href="/api/demo" variant="secondary" icon="bolt" className="px-6 py-3 text-base">
-              Canlı Demo
+            <LinkButton href="/api/demo" variant="secondary" icon="cube" className="px-6 py-3 text-base">
+              Demo
             </LinkButton>
           </div>
-          <div className="mt-8 flex animate-fade-in flex-wrap items-center gap-x-6 gap-y-2 text-sm text-slate-500 [animation-delay:240ms]">
-            <span className="flex items-center gap-1.5">
-              <Icons.check size={15} className="text-emerald-400" /> 5 dakikada kurulum
-            </span>
-            <span className="flex items-center gap-1.5">
-              <Icons.check size={15} className="text-emerald-400" /> 7/24 destek
-            </span>
-            <span className="flex items-center gap-1.5">
-              <Icons.check size={15} className="text-emerald-400" /> Lifetime seçeneği
+          <div className="mt-8 flex animate-fade-in items-center gap-3 [animation-delay:240ms]">
+            <div className="flex -space-x-2">
+              {["from-brand-500 to-accent-violet", "from-emerald-500 to-cyan-500", "from-amber-500 to-rose-500", "from-purple-500 to-brand-500"].map((g, i) => (
+                <span key={i} className={`grid h-8 w-8 place-items-center rounded-full bg-gradient-to-br ${g} ring-2 ring-base-950 text-[10px] font-bold text-white`}>
+                  {["A", "R", "M", "K"][i]}
+                </span>
+              ))}
+            </div>
+            <span className="text-sm text-slate-400">
+              <span className="font-bold text-white">6000+</span> müşteri güveniyor
             </span>
           </div>
         </div>
 
-        {/* Mouse ile hareket eden 3B görsel */}
         <div className="animate-scale-in [animation-delay:120ms]">
           <HeroParallax />
         </div>
@@ -80,129 +73,188 @@ function Hero() {
   );
 }
 
-function LogoStrip() {
+/* ----------------------------- FEATURES -------------------------------- */
+
+function Features() {
   return (
-    <section className="border-y border-white/5 bg-base-950/50 py-6">
-      <div className="mx-auto flex max-w-6xl flex-wrap items-center justify-center gap-x-10 gap-y-3 px-4 text-slate-600 sm:px-6">
-        <span className="text-xs uppercase tracking-widest">Güvenenler</span>
-        {["RolePlay TR", "LosSantos", "Vespucci", "Paleto", "Sandy RP", "Mirror Park"].map((n) => (
-          <span key={n} className="text-sm font-semibold text-slate-500">{n}</span>
-        ))}
+    <section id="features" className="mx-auto max-w-6xl scroll-mt-20 px-4 py-16 sm:px-6">
+      <Reveal className="text-center">
+        <h2 className="text-4xl font-extrabold tracking-tight text-white sm:text-5xl">Özellikler</h2>
+      </Reveal>
+
+      <div className="mt-12 grid gap-4 md:grid-cols-5">
+        {/* Web Panel (geniş) */}
+        <Reveal className="md:col-span-3">
+          <FeatureCard icon="globe" title="Web Panel" text="Sunucunu web panelinden yönet. Admin ekle, ayarları değiştir.">
+            <WebPanelMock />
+          </FeatureCard>
+        </Reveal>
+        {/* User Lookup */}
+        <Reveal delay={100} className="md:col-span-2">
+          <FeatureCard icon="search" title="Oyuncu Sorgulama" text="Sunucuna katılmış herhangi bir oyuncuyu sorgula.">
+            <LookupMock />
+          </FeatureCard>
+        </Reveal>
+        {/* Ingame Map */}
+        <Reveal className="md:col-span-2">
+          <FeatureCard icon="map" title="İnteraktif Harita" text="Sunucundaki oyuncu konumları ve aktivitesi canlı.">
+            <MapMock />
+          </FeatureCard>
+        </Reveal>
+        {/* Monitoring (geniş) */}
+        <Reveal delay={100} className="md:col-span-3">
+          <FeatureCard icon="eye" title="İzleme (Monitoring)" text="Birden fazla oyuncunun ekranını aynı anda izle.">
+            <MonitoringMock />
+          </FeatureCard>
+        </Reveal>
+        {/* Ingame Menu (geniş) */}
+        <Reveal className="md:col-span-3">
+          <FeatureCard icon="config" title="Oyun İçi Menü" text="Banları kaldır, oyuncuları izle, araç spawn et — oyunun içinden.">
+            <IngameMenuMock />
+          </FeatureCard>
+        </Reveal>
+        {/* Session Replay */}
+        <Reveal delay={100} className="md:col-span-2">
+          <FeatureCard icon="activity" title="Oturum Tekrarı" text="Bir oyuncunun tüm FiveM oturumunu tekrar izle.">
+            <ReplayMock />
+          </FeatureCard>
+        </Reveal>
+      </div>
+
+      <div className="mt-10 flex items-center justify-center gap-3">
+        <LinkButton href="/#pricing" variant="secondary">Neden biz?</LinkButton>
+        <Link href="/docs" className="inline-flex items-center gap-1.5 text-sm font-medium text-slate-300 hover:text-white">
+          Diğer anti-cheat&apos;lerle karşılaştır <Icons.arrowRight size={15} />
+        </Link>
       </div>
     </section>
   );
 }
 
-/* --------------------------- FEATURE ROWS ------------------------------ */
-
-function FeatureRows() {
-  const rows = [
-    {
-      eyebrow: "Tespit Motoru",
-      title: "Bilinen ve bilinmeyen tüm hileler",
-      text: "Davranış analizi ve imza tabanlı tespitin birleşimi ile aimbot, silent aim, ESP, godmode ve daha fazlasını sunucu tarafında yakalar.",
-      points: ["Client'a güvenmez", "Otomatik ban & kanıt", "Akıllı eşiklerle düşük yanlış pozitif"],
-      icon: "shieldCheck" as const,
-      mock: <DetectionMock />,
-    },
-    {
-      eyebrow: "Web Panel",
-      title: "Sunucunu tarayıcıdan yönet",
-      text: "Oyuncular, banlar, canlı harita, analitik ve konsol — hepsi tek modern panelde. Web'den banla, kickle, sorgula.",
-      points: ["Canlı oyuncu haritası", "Web'den ban / kick / uyarı", "Oyuncu sorgulama & alt hesap"],
-      icon: "globe" as const,
-      mock: <PanelMock />,
-      reverse: true,
-    },
-    {
-      eyebrow: "Güvenlik Kuralları",
-      title: "40+ koruma, tek tıkla aç/kapat",
-      text: "Executor, client, health, weapon, entity ve event korumalarını sunucuna göre özelleştir. Değişiklikler anında uygulanır.",
-      points: ["Kategorili toggle'lar", "Discord webhook logları", "Lisans bazlı özellikler"],
-      icon: "config" as const,
-      mock: <RulesMock />,
-    },
-  ];
-
+function FeatureCard({
+  icon,
+  title,
+  text,
+  children,
+}: {
+  icon: any;
+  title: string;
+  text: string;
+  children: React.ReactNode;
+}) {
+  const Icon = (Icons as any)[icon];
   return (
-    <section id="features" className="mx-auto max-w-6xl scroll-mt-20 px-4 py-24 sm:px-6">
-      <div className="space-y-24">
-        {rows.map((r, i) => (
-          <div key={i} className="grid items-center gap-10 lg:grid-cols-2">
-            <Reveal className={r.reverse ? "lg:order-2" : ""}>
-              <span className="section-title text-brand-400">{r.eyebrow}</span>
-              <h2 className="mt-3 text-3xl font-bold tracking-tight text-white sm:text-4xl">
-                {r.title}
-              </h2>
-              <p className="mt-4 text-slate-400">{r.text}</p>
-              <ul className="mt-6 space-y-3">
-                {r.points.map((p) => (
-                  <li key={p} className="flex items-center gap-3 text-sm text-slate-300">
-                    <span className="grid h-5 w-5 shrink-0 place-items-center rounded-full bg-emerald-500/15 text-emerald-400">
-                      <Icons.check size={13} />
-                    </span>
-                    {p}
-                  </li>
-                ))}
-              </ul>
-            </Reveal>
-            <Reveal delay={120} className={r.reverse ? "lg:order-1" : ""}>
-              {r.mock}
-            </Reveal>
-          </div>
-        ))}
+    <div className="group flex h-full flex-col overflow-hidden rounded-2xl border border-white/5 bg-base-850/60 p-4 transition hover:border-brand-500/25">
+      <div className="relative mb-4 flex-1 overflow-hidden rounded-xl border border-white/5 bg-base-900/60">
+        {children}
       </div>
-    </section>
+      <div className="flex items-start gap-3">
+        <span className="grid h-9 w-9 shrink-0 place-items-center rounded-lg bg-brand-500/10 text-brand-300">
+          <Icon size={18} />
+        </span>
+        <div>
+          <h3 className="text-sm font-bold text-white">{title}</h3>
+          <p className="mt-0.5 text-xs text-slate-400">{text}</p>
+        </div>
+      </div>
+    </div>
   );
 }
 
-function DetectionMock() {
-  const items = [
-    { n: "AimBot", t: "blue" as const },
-    { n: "Silent Aim", t: "violet" as const },
-    { n: "Overlay / ESP", t: "amber" as const },
-    { n: "Godmode", t: "green" as const },
-    { n: "Spoofer", t: "blue" as const },
-    { n: "Injection", t: "red" as const },
-  ];
+/* --- Feature mockups --- */
+
+function WebPanelMock() {
   return (
-    <div className="card p-6">
-      <div className="mb-4 flex items-center justify-between">
-        <span className="text-sm font-semibold text-white">Aktif Tespit Modülleri</span>
-        <Badge tone="green" dot>Canlı</Badge>
+    <div className="p-4">
+      <div className="mb-3 flex items-center justify-between">
+        <div>
+          <div className="text-[11px] font-semibold text-white">Server</div>
+          <div className="text-[9px] text-slate-500">FiveM server protected by Aeigs</div>
+        </div>
+        <div className="flex gap-4 text-right">
+          <div><div className="text-sm font-bold text-white">282</div><div className="text-[8px] text-slate-500">AVG</div></div>
+          <div><div className="text-sm font-bold text-white">656</div><div className="text-[8px] text-slate-500">PEAK</div></div>
+        </div>
       </div>
-      <div className="grid grid-cols-2 gap-3">
-        {items.map((d) => (
-          <div key={d.n} className="flex items-center justify-between rounded-xl border border-white/5 bg-base-900/60 px-3 py-2.5">
-            <span className="text-sm text-slate-300">{d.n}</span>
-            <Badge tone={d.t}>Aktif</Badge>
-          </div>
+      <div className="h-28">
+        <svg viewBox="0 0 320 100" className="h-full w-full" preserveAspectRatio="none">
+          <defs><linearGradient id="wp" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stopColor="#6366f1" stopOpacity="0.4" /><stop offset="1" stopColor="#6366f1" stopOpacity="0" /></linearGradient></defs>
+          <path d="M0,80 C40,78 55,40 90,42 C120,44 130,20 170,22 C210,24 220,60 260,55 C290,51 305,58 320,54 L320,100 L0,100 Z" fill="url(#wp)" />
+          <path d="M0,80 C40,78 55,40 90,42 C120,44 130,20 170,22 C210,24 220,60 260,55 C290,51 305,58 320,54" fill="none" stroke="#818cf8" strokeWidth="1.5" />
+        </svg>
+      </div>
+      <div className="mt-2 flex gap-2 text-[8px] text-slate-500">
+        {["Delete Vehicles", "Delete Peds", "Delete Objects"].map((b) => (
+          <span key={b} className="rounded border border-white/10 px-2 py-1">{b}</span>
         ))}
       </div>
     </div>
   );
 }
 
-function PanelMock() {
+function LookupMock() {
   return (
-    <div className="card overflow-hidden p-0">
-      <div className="flex items-center gap-2 border-b border-white/5 px-4 py-3">
-        <span className="h-2.5 w-2.5 rounded-full bg-rose-500/70" />
-        <span className="h-2.5 w-2.5 rounded-full bg-amber-500/70" />
-        <span className="h-2.5 w-2.5 rounded-full bg-emerald-500/70" />
+    <div className="space-y-2 p-4">
+      <div className="flex items-center gap-2 rounded-lg border border-white/5 bg-base-850/60 px-2.5 py-2">
+        <Icons.ban size={13} className="text-rose-300" />
+        <div className="min-w-0 flex-1">
+          <div className="truncate text-[10px] text-slate-200">Ace Roleplay — ban kaydı</div>
+          <div className="text-[8px] text-slate-500">Entity created in script startup</div>
+        </div>
       </div>
-      <div className="grid grid-cols-3 gap-2 p-4">
-        {[["ONLINE", "256"], ["BANS", "89"], ["PLAYERS", "15.8K"]].map(([l, v]) => (
-          <div key={l} className="rounded-xl border border-white/5 bg-base-900/60 p-3">
-            <div className="text-[9px] font-semibold tracking-wider text-slate-500">{l}</div>
-            <div className="mt-1 text-lg font-bold text-white">{v}</div>
-          </div>
-        ))}
+      <div className="rounded-lg border border-white/5 bg-base-850/60 p-2.5">
+        <div className="flex items-center gap-2">
+          <span className="grid h-7 w-7 place-items-center rounded-full bg-brand-gradient text-[9px] font-bold text-white">A</span>
+          <div><div className="text-[10px] text-slate-200">Akin</div><div className="text-[8px] text-slate-500">discord · 8/22/2024</div></div>
+        </div>
+        <div className="mt-2 rounded bg-emerald-500/10 px-2 py-1 text-[8px] text-emerald-300">Herhangi bir hile Discord&apos;unda değil</div>
       </div>
-      <div className="px-4 pb-4">
-        <div className="flex h-24 items-end gap-1 rounded-xl border border-white/5 bg-base-900/60 p-3">
-          {[40, 60, 50, 72, 64, 84, 76, 96, 88, 74, 92, 100].map((h, i) => (
-            <div key={i} className="flex-1 rounded-t bg-gradient-to-t from-brand-500/30 to-brand-400" style={{ height: `${h}%` }} />
+      <div className="flex items-center justify-center pt-1">
+        <Icons.search size={18} className="text-slate-600" />
+      </div>
+    </div>
+  );
+}
+
+function MapMock() {
+  return (
+    <div className="relative h-full min-h-[150px] bg-gradient-to-br from-emerald-900/20 via-base-900 to-brand-900/20">
+      <div className="absolute inset-0 bg-grid-faint [background-size:20px_20px] opacity-40" />
+      {[[20, 30], [50, 45], [70, 25], [35, 65], [80, 60], [60, 75], [25, 50], [45, 20]].map(([x, y], i) => (
+        <span key={i} className="absolute h-2 w-2 -translate-x-1/2 -translate-y-1/2 rounded-full ring-2 ring-black/40"
+          style={{ left: `${x}%`, top: `${y}%`, background: i % 3 === 0 ? "#f43f5e" : i % 3 === 1 ? "#f59e0b" : "#10b981" }} />
+      ))}
+    </div>
+  );
+}
+
+function MonitoringMock() {
+  return (
+    <div className="grid grid-cols-4 gap-1 p-3">
+      {Array.from({ length: 8 }).map((_, i) => (
+        <div key={i} className="relative aspect-video overflow-hidden rounded bg-gradient-to-br from-slate-700/40 to-base-900">
+          <div className="absolute inset-0 bg-grid-faint [background-size:8px_8px] opacity-30" />
+          <span className="absolute bottom-0.5 left-0.5 rounded bg-black/50 px-1 text-[6px] text-slate-300">[{1400 + i}]</span>
+        </div>
+      ))}
+    </div>
+  );
+}
+
+function IngameMenuMock() {
+  return (
+    <div className="grid grid-cols-2 gap-3 p-4">
+      <div>
+        <div className="text-[10px] font-semibold text-white">Duyuru</div>
+        <div className="mt-1.5 h-6 rounded border border-white/5 bg-base-850/60" />
+        <div className="mt-1.5 h-10 rounded border border-white/5 bg-base-850/60" />
+        <div className="mt-1.5 rounded bg-brand-500/80 py-1 text-center text-[9px] font-medium text-white">Gönder</div>
+      </div>
+      <div>
+        <div className="text-[10px] font-semibold text-white">Admin</div>
+        <div className="mt-1.5 grid grid-cols-2 gap-1.5">
+          {["Delete Vehicles", "Delete Peds", "ESP", "Freecam", "Passive", "Blips"].map((b) => (
+            <span key={b} className="rounded border border-white/10 bg-white/5 px-1.5 py-1 text-[7px] text-slate-300">{b}</span>
           ))}
         </div>
       </div>
@@ -210,194 +262,43 @@ function PanelMock() {
   );
 }
 
-function RulesMock() {
-  const rules = [
-    ["Anti Aimbot", true], ["Anti NoClip", true], ["Anti Godmode", true],
-    ["Anti Spawn", true], ["Anti Speed Hack", true], ["Anti Overlay", false],
-  ] as const;
+function ReplayMock() {
   return (
-    <div className="card p-6">
-      <div className="mb-4 flex items-center justify-between">
-        <span className="text-sm font-semibold text-white">Güvenlik Kuralları</span>
-        <span className="text-xs text-slate-500">38 aktif</span>
+    <div className="relative h-full min-h-[150px] bg-gradient-to-br from-slate-800/40 to-base-900">
+      <div className="absolute inset-0 bg-grid-faint [background-size:16px_16px] opacity-25" />
+      <div className="absolute inset-0 grid place-items-center">
+        <span className="grid h-12 w-12 place-items-center rounded-full bg-white/10 ring-1 ring-white/20 backdrop-blur">
+          <svg width="18" height="18" viewBox="0 0 24 24" fill="white"><path d="M8 5v14l11-7z" /></svg>
+        </span>
       </div>
-      <div className="space-y-2">
-        {rules.map(([n, on]) => (
-          <div key={n} className="flex items-center justify-between rounded-xl border border-white/5 bg-base-900/60 px-3 py-2.5">
-            <span className="text-sm text-slate-300">{n}</span>
-            <span className={"relative inline-flex h-5 w-9 items-center rounded-full " + (on ? "bg-brand-500" : "bg-white/10")}>
-              <span className={"inline-block h-3.5 w-3.5 transform rounded-full bg-white transition " + (on ? "translate-x-5" : "translate-x-1")} />
-            </span>
-          </div>
-        ))}
-      </div>
+      <div className="absolute bottom-0 left-0 right-0 h-1 bg-white/10"><div className="h-full w-1/3 bg-brand-400" /></div>
     </div>
   );
 }
 
-/* ----------------------------- STATS ----------------------------------- */
+/* --------------------------- TESTIMONIALS ------------------------------ */
 
-function StatsBand() {
-  const stats = [
-    { v: "99.9%", l: "Tespit oranı" },
-    { v: "<5ms", l: "Sunucu gecikmesi" },
-    { v: "15K+", l: "Korunan oyuncu" },
-    { v: "24/7", l: "Canlı izleme" },
-  ];
+function TestimonialsSection() {
   return (
-    <section className="border-y border-white/5 bg-base-900/40 py-16">
-      <div className="mx-auto grid max-w-5xl grid-cols-2 gap-6 px-4 sm:px-6 md:grid-cols-4">
-        {stats.map((s, i) => (
-          <Reveal key={s.l} delay={i * 80} className="text-center">
-            <div className="bg-gradient-to-b from-white to-slate-400 bg-clip-text text-4xl font-extrabold text-transparent sm:text-5xl">
-              {s.v}
-            </div>
-            <div className="mt-2 text-sm text-slate-500">{s.l}</div>
-          </Reveal>
-        ))}
-      </div>
-    </section>
-  );
-}
-
-/* --------------------------- DETECTION --------------------------------- */
-
-function Detection() {
-  const detections = [
-    "AimBot", "Silent Aim", "Overlay / ESP", "Illegal Weapon", "Godmode",
-    "Spoofer", "Resource Inject", "Event Exploit", "Illegal Vehicle", "Explosion Spam",
-  ];
-  return (
-    <section id="detection" className="mx-auto max-w-6xl scroll-mt-20 px-4 py-24 sm:px-6">
-      <Reveal className="mx-auto max-w-2xl text-center">
-        <span className="section-title text-brand-400">Koruma Kapsamı</span>
-        <h2 className="mt-3 text-3xl font-bold tracking-tight text-white sm:text-4xl">
-          Her tehdide karşı tek kalkan
-        </h2>
-        <p className="mt-4 text-slate-400">
-          Yaygın hilelerden yeni exploit&apos;lere kadar geniş kapsamlı koruma.
-        </p>
-      </Reveal>
-      <div className="mt-12 flex flex-wrap justify-center gap-3">
-        {detections.map((d, i) => (
-          <Reveal
-            key={d}
-            delay={i * 40}
-            className="flex items-center gap-2 rounded-full border border-white/10 bg-base-850/60 px-4 py-2 text-sm text-slate-300"
-          >
-            <Icons.shieldCheck size={15} className="text-emerald-400" />
-            {d}
-          </Reveal>
-        ))}
-      </div>
-    </section>
-  );
-}
-
-/* ----------------------------- DEMO ------------------------------------ */
-
-function DemoSection() {
-  return (
-    <section id="demo" className="mx-auto max-w-6xl scroll-mt-20 px-4 py-24 sm:px-6">
-      <div className="relative overflow-hidden rounded-3xl border border-white/10 bg-base-900/50 p-8 sm:p-12">
-        <div className="pointer-events-none absolute -right-16 -top-16 h-64 w-64 rounded-full bg-brand-500/15 blur-3xl" />
-        <div className="grid items-center gap-10 lg:grid-cols-2">
-          <Reveal>
-            <Badge tone="blue">Canlı Demo</Badge>
-            <h2 className="mt-4 text-3xl font-bold tracking-tight text-white sm:text-4xl">
-              Paneli kaydolmadan dene
-            </h2>
-            <p className="mt-4 text-slate-400">
-              Demo hesabıyla gerçek verilerle dolu bir sunucuyu incele: dashboard,
-              oyuncular, banlar, canlı harita, güvenlik kuralları ve konsol.
-            </p>
-            <div className="mt-6 flex flex-col gap-3 sm:flex-row">
-              <LinkButton href="/api/demo" icon="bolt" className="px-6 py-3">
-                Demoyu Aç
-              </LinkButton>
-              <LinkButton href="/login" variant="secondary" className="px-6 py-3">
-                Giriş Yap
-              </LinkButton>
-            </div>
-            <div className="mt-5 rounded-xl border border-white/5 bg-base-950/50 px-4 py-3 text-xs text-slate-500">
-              Demo hesabı: <span className="font-mono text-slate-300">demo@aeigs.gg</span> ·{" "}
-              <span className="font-mono text-slate-300">Demo1234</span>
-            </div>
-          </Reveal>
-          <Reveal delay={120}>
-            <PanelMock />
-          </Reveal>
-        </div>
-      </div>
-    </section>
-  );
-}
-
-/* --------------------------- PRICING ----------------------------------- */
-
-function PricingTeaser() {
-  const tiers = [
-    { name: "Starter", price: "€14.99", period: "/ay", featured: false, points: ["Temel tespit", "Web panel", "1 sunucu"] },
-    { name: "Premium", price: "€29.99", period: "/ay", featured: true, points: ["Gelişmiş tespit", "Canlı harita + konsol", "Otomatik ban", "3 sunucu"] },
-    { name: "Enterprise", price: "€99.99", period: "lifetime", featured: false, points: ["Tüm özellikler", "API erişimi", "Öncelikli destek"] },
-  ];
-  return (
-    <section id="pricing" className="mx-auto max-w-6xl scroll-mt-20 px-4 py-24 sm:px-6">
-      <Reveal className="mx-auto max-w-2xl text-center">
-        <span className="section-title text-brand-400">Fiyatlandırma</span>
-        <h2 className="mt-3 text-3xl font-bold tracking-tight text-white sm:text-4xl">
-          Sunucuna uygun paketi seç
+    <section className="border-y border-white/5 bg-base-900/30 py-20">
+      <Reveal className="mb-10 text-center">
+        <h2 className="text-3xl font-extrabold tracking-tight text-white sm:text-4xl">
+          Müşterilerimiz Ne Diyor
         </h2>
       </Reveal>
-      <div className="mt-12 grid gap-6 lg:grid-cols-3">
-        {tiers.map((t, i) => (
-          <Reveal
-            key={t.name}
-            delay={i * 100}
-            className={
-              "card relative flex flex-col p-7 " +
-              (t.featured ? "border-brand-500/40 shadow-glow ring-1 ring-brand-500/20" : "")
-            }
-          >
-            {t.featured && (
-              <span className="absolute -top-3 left-1/2 -translate-x-1/2">
-                <Badge tone="blue"><Icons.crown size={12} /> En Popüler</Badge>
-              </span>
-            )}
-            <h3 className="text-lg font-bold text-white">{t.name}</h3>
-            <div className="mt-3 flex items-end gap-1">
-              <span className="text-4xl font-extrabold text-white">{t.price}</span>
-              <span className="pb-1 text-sm text-slate-500">{t.period}</span>
-            </div>
-            <ul className="my-6 flex-1 space-y-3">
-              {t.points.map((p) => (
-                <li key={p} className="flex items-center gap-2.5 text-sm text-slate-300">
-                  <span className="grid h-5 w-5 place-items-center rounded-full bg-emerald-500/15 text-emerald-400">
-                    <Icons.check size={13} />
-                  </span>
-                  {p}
-                </li>
-              ))}
-            </ul>
-            <LinkButton href="/pricing" variant={t.featured ? "primary" : "secondary"} className="w-full justify-center py-3">
-              Paketi Seç
-            </LinkButton>
-          </Reveal>
-        ))}
-      </div>
+      <Testimonials />
     </section>
   );
 }
 
-/* ----------------------------- FAQ ------------------------------------- */
+/* ------------------------------- FAQ ----------------------------------- */
 
 function FaqSection() {
   return (
     <section id="faq" className="mx-auto max-w-6xl scroll-mt-20 px-4 py-24 sm:px-6">
-      <Reveal className="mx-auto mb-12 max-w-2xl text-center">
-        <span className="section-title text-brand-400">SSS</span>
-        <h2 className="mt-3 text-3xl font-bold tracking-tight text-white sm:text-4xl">
-          Sık sorulan sorular
+      <Reveal className="mb-12 text-center">
+        <h2 className="text-3xl font-extrabold tracking-tight text-white sm:text-4xl">
+          Sıkça Sorulan Sorular
         </h2>
       </Reveal>
       <Faq />
@@ -405,24 +306,35 @@ function FaqSection() {
   );
 }
 
-/* ----------------------------- CTA ------------------------------------- */
+/* ----------------------------- PRICING --------------------------------- */
 
-function CtaBand() {
+function PricingSection() {
+  return (
+    <section id="pricing" className="mx-auto max-w-6xl scroll-mt-20 px-4 py-16 sm:px-6">
+      <Reveal className="mb-12 text-center">
+        <h2 className="text-4xl font-extrabold tracking-tight text-white sm:text-5xl">Planını Seç</h2>
+      </Reveal>
+      <PricingTiers />
+    </section>
+  );
+}
+
+/* ---------------------------- NEED HELP -------------------------------- */
+
+function NeedHelp() {
   return (
     <section className="mx-auto max-w-6xl px-4 pb-24 sm:px-6">
-      <Reveal className="relative overflow-hidden rounded-3xl border border-brand-500/20 bg-gradient-to-br from-brand-600/20 via-base-850 to-accent-violet/10 p-10 text-center sm:p-16">
-        <div className="pointer-events-none absolute -right-20 -top-20 h-60 w-60 rounded-full bg-brand-500/20 blur-3xl" />
-        <h2 className="text-3xl font-bold tracking-tight text-white sm:text-4xl">
-          Sunucunu bugün koruma altına al
-        </h2>
-        <p className="mx-auto mt-4 max-w-xl text-slate-300">
-          Hesabını oluştur, lisansını etkinleştir ve dakikalar içinde korunmaya başla.
-        </p>
-        <div className="mt-8 flex flex-col items-center justify-center gap-3 sm:flex-row">
-          <LinkButton href="/register" className="px-6 py-3 text-base">Ücretsiz Hesap Oluştur</LinkButton>
-          <Link href="/api/demo" className="text-sm font-medium text-slate-300 hover:text-white">
-            veya canlı demoyu aç →
-          </Link>
+      <Reveal className="flex flex-col items-start justify-between gap-6 rounded-3xl border border-white/10 bg-base-900/50 p-8 sm:p-10 lg:flex-row lg:items-center">
+        <div>
+          <h3 className="text-2xl font-bold text-white">Yardıma mı ihtiyacın var?</h3>
+          <p className="mt-2 max-w-xl text-sm text-slate-400">
+            Ürünümüz hakkında soruların veya önerilerin varsa bize ulaş. Destekten
+            önce lütfen dokümantasyona göz at.
+          </p>
+        </div>
+        <div className="flex shrink-0 gap-3">
+          <LinkButton href="/docs" variant="secondary" icon="book">Dokümantasyon</LinkButton>
+          <LinkButton href="/register" icon="discord">Discord&apos;a Katıl</LinkButton>
         </div>
       </Reveal>
     </section>

@@ -85,6 +85,14 @@ const config: Config = {
           "70%": { boxShadow: "0 0 0 10px rgba(99,102,241,0)" },
           "100%": { boxShadow: "0 0 0 0 rgba(99,102,241,0)" },
         },
+        marquee: {
+          from: { transform: "translateX(0)" },
+          to: { transform: "translateX(-50%)" },
+        },
+        "marquee-rev": {
+          from: { transform: "translateX(-50%)" },
+          to: { transform: "translateX(0)" },
+        },
       },
       animation: {
         "fade-in": "fade-in 0.4s ease-out both",
@@ -95,6 +103,8 @@ const config: Config = {
         float: "float 5s ease-in-out infinite",
         shimmer: "shimmer 1.6s infinite",
         "pulse-ring": "pulse-ring 2s ease-out infinite",
+        marquee: "marquee 40s linear infinite",
+        "marquee-rev": "marquee-rev 46s linear infinite",
       },
     },
   },

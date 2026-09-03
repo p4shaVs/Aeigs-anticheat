@@ -4,56 +4,47 @@ import { useEffect, useRef } from "react";
 import { Icons } from "./icons";
 
 /**
- * Mouse hareketine tepki veren 3B hero görseli.
- * - İmleç konumuna göre panoyu eğer (rotateX/rotateY)
- * - Katmanlar farklı derinlikte (translateZ) → parallax
- * - Arkadaki ışık imleci takip eder
- * Not: Buradaki pano, Aeigs panelinin stilize bir önizlemesidir. Kendi PNG
- * görselini kullanmak istersen /public içine koyup <img> ile değiştirebilirsin.
+ * electron-services tarzı hero görseli:
+ * - Eğik (3B perspektif) dashboard önizlemesi
+ * - Etrafında yüzen istatistik rozetleri (Servers / Bans / Players Protected)
+ * - Mouse hareketine göre eğilir, katmanlar parallax yapar
  */
 export function HeroParallax() {
   const wrapRef = useRef<HTMLDivElement>(null);
-  const cardRef = useRef<HTMLDivElement>(null);
-  const glowRef = useRef<HTMLDivElement>(null);
+  const sceneRef = useRef<HTMLDivElement>(null);
   const raf = useRef<number>();
 
   useEffect(() => {
     const wrapEl = wrapRef.current;
-    const cardEl = cardRef.current;
-    const glowEl = glowRef.current;
-    if (!wrapEl || !cardEl) return;
+    const sceneEl = sceneRef.current;
+    if (!wrapEl || !sceneEl) return;
     if (window.matchMedia("(prefers-reduced-motion: reduce)").matches) return;
 
     let tx = 0, ty = 0, cx = 0, cy = 0;
-
     const schedule = () => {
       if (raf.current) return;
       raf.current = requestAnimationFrame(apply);
     };
     const apply = () => {
       raf.current = undefined;
-      cx += (tx - cx) * 0.12;
-      cy += (ty - cy) * 0.12;
-      const ry = cx * 16;
-      const rx = -cy * 14;
-      cardEl.style.transform = `perspective(1100px) rotateX(${rx.toFixed(2)}deg) rotateY(${ry.toFixed(2)}deg)`;
-      cardEl.style.setProperty("--px", `${(cx * 26).toFixed(1)}px`);
-      cardEl.style.setProperty("--py", `${(cy * 26).toFixed(1)}px`);
+      cx += (tx - cx) * 0.1;
+      cy += (ty - cy) * 0.1;
+      // temel eğim + mouse etkisi
+      const ry = -12 + cx * 12;
+      const rx = 8 - cy * 10;
+      sceneEl.style.setProperty("--ry", `${ry.toFixed(2)}deg`);
+      sceneEl.style.setProperty("--rx", `${rx.toFixed(2)}deg`);
+      sceneEl.style.setProperty("--px", `${(cx * 30).toFixed(1)}px`);
+      sceneEl.style.setProperty("--py", `${(cy * 30).toFixed(1)}px`);
       if (Math.abs(tx - cx) > 0.001 || Math.abs(ty - cy) > 0.001) schedule();
     };
     const onMove = (e: MouseEvent) => {
       const r = wrapEl.getBoundingClientRect();
       tx = (e.clientX - r.left) / r.width - 0.5;
       ty = (e.clientY - r.top) / r.height - 0.5;
-      if (glowEl) {
-        glowEl.style.setProperty("--gx", `${e.clientX - r.left}px`);
-        glowEl.style.setProperty("--gy", `${e.clientY - r.top}px`);
-      }
       schedule();
     };
-    const onLeave = () => {
-      tx = 0; ty = 0; schedule();
-    };
+    const onLeave = () => { tx = 0; ty = 0; schedule(); };
 
     window.addEventListener("mousemove", onMove);
     wrapEl.addEventListener("mouseleave", onLeave);
@@ -65,109 +56,138 @@ export function HeroParallax() {
   }, []);
 
   return (
-    <div ref={wrapRef} className="relative [perspective:1100px]">
-      {/* İmleci takip eden ışık */}
+    <div ref={wrapRef} className="relative min-h-[420px] [perspective:1600px]">
       <div
-        ref={glowRef}
-        className="pointer-events-none absolute inset-0 -z-10 rounded-[2rem] opacity-70"
+        ref={sceneRef}
+        className="relative [transform-style:preserve-3d] will-change-transform"
         style={{
-          background:
-            "radial-gradient(28rem 28rem at var(--gx,50%) var(--gy,40%), rgba(99,102,241,0.28), transparent 60%)",
+          transform:
+            "rotateX(var(--rx,8deg)) rotateY(var(--ry,-12deg)) rotateZ(1deg)",
         }}
-      />
-
-      <div
-        ref={cardRef}
-        className="relative rounded-2xl border border-white/10 bg-base-850/80 p-3 shadow-card backdrop-blur-xl transition-transform duration-100 [transform-style:preserve-3d] will-change-transform"
       >
-        {/* Tarayıcı çubuğu */}
-        <div className="mb-3 flex items-center gap-2 px-2 pt-1">
-          <span className="h-2.5 w-2.5 rounded-full bg-rose-500/70" />
-          <span className="h-2.5 w-2.5 rounded-full bg-amber-500/70" />
-          <span className="h-2.5 w-2.5 rounded-full bg-emerald-500/70" />
-          <span className="ml-3 rounded-md bg-white/5 px-3 py-1 text-[11px] text-slate-500">
-            panel.aeigs.gg/dashboard
-          </span>
-        </div>
-
-        {/* Stat kartları — derinlikte yüzer */}
+        {/* Dashboard panosu */}
         <div
-          className="grid grid-cols-3 gap-2"
-          style={{ transform: "translateZ(40px) translate(var(--px), var(--py))" }}
+          className="overflow-hidden rounded-2xl border border-white/10 bg-base-850/90 shadow-[0_40px_120px_-30px_rgba(0,0,0,0.9)] backdrop-blur-xl"
+          style={{ transform: "translate(var(--px,0), var(--py,0))" }}
         >
-          {[
-            { l: "ONLINE", v: "256", c: "text-emerald-300", i: "activity" as const },
-            { l: "BANS", v: "89", c: "text-rose-300", i: "ban" as const },
-            { l: "PLAYERS", v: "15.8K", c: "text-brand-300", i: "users" as const },
-          ].map((s) => {
-            const Icon = Icons[s.i];
-            return (
-              <div key={s.l} className="rounded-xl border border-white/5 bg-base-900/70 p-3">
-                <div className="flex items-center justify-between">
-                  <span className="text-[9px] font-semibold tracking-wider text-slate-500">{s.l}</span>
-                  <Icon size={13} className={s.c} />
-                </div>
-                <div className={`mt-1 text-lg font-bold ${s.c}`}>{s.v}</div>
-              </div>
-            );
-          })}
-        </div>
-
-        {/* Grafik */}
-        <div
-          className="mt-2 rounded-xl border border-white/5 bg-base-900/70 p-3"
-          style={{ transform: "translateZ(24px) translate(calc(var(--px)*0.6), calc(var(--py)*0.6))" }}
-        >
-          <div className="mb-2 flex items-center justify-between">
-            <span className="text-[10px] font-semibold text-slate-300">Sunucu Analitiği</span>
-            <span className="rounded bg-emerald-500/10 px-1.5 py-0.5 text-[9px] text-emerald-300">CANLI</span>
-          </div>
-          <div className="flex h-24 items-end gap-1">
-            {[40, 55, 48, 66, 60, 78, 70, 88, 82, 72, 90, 100, 86, 70, 92, 80].map((h, i) => (
-              <div
-                key={i}
-                className="flex-1 rounded-t bg-gradient-to-t from-brand-500/25 to-brand-400"
-                style={{ height: `${h}%` }}
-              />
-            ))}
-          </div>
-        </div>
-
-        {/* Tespit satırı */}
-        <div
-          className="mt-2 flex items-center justify-between rounded-xl border border-white/5 bg-base-900/70 px-3 py-2"
-          style={{ transform: "translateZ(56px) translate(calc(var(--px)*1.3), calc(var(--py)*1.3))" }}
-        >
-          <div className="flex items-center gap-2">
-            <span className="grid h-6 w-6 place-items-center rounded-lg bg-rose-500/15 text-rose-300">
-              <Icons.warn size={13} />
-            </span>
-            <div>
-              <div className="text-[11px] font-medium text-slate-200">AimBot Tespit Edildi</div>
-              <div className="text-[9px] text-slate-500">Player#2481 · az önce</div>
+          {/* üst bar */}
+          <div className="flex items-center justify-between border-b border-white/5 px-4 py-2.5">
+            <div className="flex items-center gap-2">
+              <span className="grid h-6 w-6 place-items-center rounded-md bg-brand-gradient text-white">
+                <Icons.shieldCheck size={13} />
+              </span>
+              <span className="text-xs font-semibold text-white">Demo Server</span>
+              <span className="rounded bg-emerald-500/10 px-1.5 py-0.5 text-[9px] text-emerald-300">Online</span>
+            </div>
+            <div className="flex items-center gap-1.5">
+              <span className="rounded-md bg-white/10 px-2 py-0.5 text-[9px] text-white">Web Panel</span>
+              <span className="rounded-md px-2 py-0.5 text-[9px] text-slate-500">In-Game</span>
             </div>
           </div>
-          <span className="rounded-md bg-rose-500/10 px-2 py-0.5 text-[9px] font-semibold text-rose-300">
-            OTOMATİK BAN
-          </span>
-        </div>
-      </div>
-
-      {/* Yüzen küçük rozet */}
-      <div
-        className="absolute -left-5 top-1/3 animate-float rounded-2xl border border-white/10 bg-base-850/90 px-3 py-2 shadow-card backdrop-blur"
-        style={{ transform: "translateZ(80px)" }}
-      >
-        <div className="flex items-center gap-2">
-          <span className="grid h-8 w-8 place-items-center rounded-lg bg-brand-gradient text-white">
-            <Icons.shieldCheck size={16} />
-          </span>
-          <div>
-            <div className="text-[11px] font-bold text-white">99.9%</div>
-            <div className="text-[9px] text-slate-500">Tespit oranı</div>
+          <div className="flex">
+            {/* sidebar */}
+            <div className="hidden w-32 shrink-0 space-y-1 border-r border-white/5 p-2 sm:block">
+              {([
+                ["dashboard", "Dashboard", true],
+                ["users", "Players", false],
+                ["map", "Harita", false],
+                ["search", "Sorgulama", false],
+                ["ban", "Yasaklar", false],
+                ["terminal", "Konsol", false],
+              ] as [string, string, boolean][]).map(([ic, l, active]) => {
+                const Icon = (Icons as any)[ic];
+                return (
+                  <div
+                    key={l}
+                    className={
+                      "flex items-center gap-2 rounded-lg px-2 py-1.5 text-[10px] " +
+                      (active ? "bg-brand-500/15 text-white" : "text-slate-500")
+                    }
+                  >
+                    <Icon size={12} /> {l}
+                  </div>
+                );
+              })}
+            </div>
+            {/* main */}
+            <div className="flex-1 p-3">
+              <div className="mb-2 flex items-center justify-between">
+                <span className="text-[11px] font-semibold text-white">Sunucu Analitiği</span>
+                <span className="text-[9px] text-slate-500">9/100 online</span>
+              </div>
+              {/* büyük grafik */}
+              <div className="h-28 rounded-lg border border-white/5 bg-base-900/60 p-2">
+                <svg viewBox="0 0 300 90" className="h-full w-full" preserveAspectRatio="none">
+                  <defs>
+                    <linearGradient id="hg" x1="0" y1="0" x2="0" y2="1">
+                      <stop offset="0" stopColor="#6366f1" stopOpacity="0.5" />
+                      <stop offset="1" stopColor="#6366f1" stopOpacity="0" />
+                    </linearGradient>
+                  </defs>
+                  <path d="M0,70 C40,66 60,20 100,18 C140,16 150,55 190,58 C230,61 250,35 300,30 L300,90 L0,90 Z" fill="url(#hg)" />
+                  <path d="M0,70 C40,66 60,20 100,18 C140,16 150,55 190,58 C230,61 250,35 300,30" fill="none" stroke="#818cf8" strokeWidth="1.5" />
+                </svg>
+              </div>
+              {/* 3 mini grafik */}
+              <div className="mt-2 grid grid-cols-3 gap-2">
+                {[["WARNS", "30", "#f59e0b"], ["KICKS", "32", "#f97316"], ["BANS", "29", "#f43f5e"]].map(([l, v, c]) => (
+                  <div key={l} className="rounded-lg border border-white/5 bg-base-900/60 p-2">
+                    <div className="flex items-center justify-between">
+                      <span className="text-[8px] text-slate-500">{l}</span>
+                      <span className="text-[11px] font-bold text-white">{v}</span>
+                    </div>
+                    <div className="mt-1 flex h-6 items-end gap-0.5">
+                      {[4, 8, 5, 10, 6, 9, 3].map((h, i) => (
+                        <div key={i} className="flex-1 rounded-sm" style={{ height: `${h * 8}%`, background: c as string }} />
+                      ))}
+                    </div>
+                  </div>
+                ))}
+              </div>
+            </div>
+            {/* actions */}
+            <div className="hidden w-32 shrink-0 space-y-1.5 border-l border-white/5 p-2 lg:block">
+              {["Araçları Sil", "Ped'leri Sil", "Nesneleri Sil", "Duyuru Gönder"].map((a) => (
+                <div key={a} className="rounded-lg border border-white/10 bg-white/5 px-2 py-1.5 text-[9px] text-slate-300">
+                  {a}
+                </div>
+              ))}
+            </div>
           </div>
         </div>
+
+        {/* Yüzen rozetler */}
+        <Badge className="-left-6 -top-6" value="9.462" label="Sunucu" delay="0s" tz={90} />
+        <Badge className="-right-5 top-1/3" value="443.808" label="Yasak" delay="1.2s" tz={110} />
+        <Badge className="-bottom-6 left-1/4" value="3.193.105" label="Korunan Oyuncu" delay="0.6s" tz={120} />
       </div>
+    </div>
+  );
+}
+
+function Badge({
+  className,
+  value,
+  label,
+  delay,
+  tz,
+}: {
+  className: string;
+  value: string;
+  label: string;
+  delay: string;
+  tz: number;
+}) {
+  return (
+    <div
+      className={
+        "absolute animate-float rounded-2xl border border-white/10 bg-base-850/95 px-4 py-2.5 shadow-card backdrop-blur " +
+        className
+      }
+      style={{ animationDelay: delay, transform: `translateZ(${tz}px)` }}
+    >
+      <div className="text-base font-extrabold text-white">{value}</div>
+      <div className="text-[10px] text-slate-500">{label}</div>
     </div>
   );
 }
