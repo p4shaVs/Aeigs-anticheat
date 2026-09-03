@@ -5,6 +5,7 @@ import { handler, ok, ApiError } from "@/lib/api";
 import { requireOwnedServer } from "@/lib/api-guards";
 import { punishSchema } from "@/lib/validation";
 import { generateBanCode } from "@/lib/keys";
+import { sendWebhook, type WebhookEvent } from "@/lib/discord";
 import { rateLimit } from "@/lib/ratelimit";
 import { audit } from "@/lib/audit";
 import { clientIp } from "@/lib/session";
@@ -34,6 +35,8 @@ export const POST = handler(
         ? new Date(Date.now() + body.durationHours * 60 * 60 * 1000)
         : null;
 
+    const banCode = body.type === "BAN" ? generateBanCode() : null;
+
     await db.$transaction(async (tx) => {
       // Kuyruğa ekle (FiveM tarafından uygulanacak)
       await tx.punishAction.create({
@@ -53,7 +56,7 @@ export const POST = handler(
           data: {
             serverId: server.id,
             playerId: player.id,
-            code: generateBanCode(),
+            code: banCode,
             license: player.license,
             steam: player.steam,
             discord: player.discord,
@@ -91,6 +94,14 @@ export const POST = handler(
       meta: { serverId: server.id, reason: body.reason },
     });
 
-    return ok({ queued: true });
+    void sendWebhook(server.config, body.type.toLowerCase() as WebhookEvent, server.name, {
+      player: player.name,
+      reason: body.reason,
+      by: user.username,
+      code: banCode ?? undefined,
+      identifiers: { license: player.license, discord: player.discord, steam: player.steam, ip: player.ip },
+    });
+
+    return ok({ queued: true, banCode });
   }
 );

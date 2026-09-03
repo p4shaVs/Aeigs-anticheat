@@ -22,7 +22,14 @@ export default async function MapPage({
     trustScore: p.trustScore,
     license: p.license,
     playtimeSec: p.playtimeSec,
+    posX: p.posX,
+    posY: p.posY,
+    heading: p.heading,
+    health: p.health,
+    armor: p.armor,
+    activity: p.activity,
+    ping: p.ping,
   }));
 
-  return <MapView players={rows} maxSlots={server.maxSlots} />;
+  return <MapView serverId={server.id} players={rows} maxSlots={server.maxSlots} />;
 }

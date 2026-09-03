@@ -45,6 +45,19 @@ AddEventHandler('entityCreating', function(handle)
   local owner = NetworkGetEntityOwner(handle)
   if not owner or owner <= 0 then return end
   local etype = GetEntityType(handle) -- 1=ped, 2=vehicle, 3=object
+
+  -- Kara liste kontrolü: yasaklı model ise oluşturmayı iptal et + uygula.
+  local model = GetEntityModel(handle)
+  local entry = Aeigs.blacklistLookup and Aeigs.blacklistLookup(model)
+  if entry then
+    local kindMap = { vehicle = 2, ped = 1, object = 3 }
+    if kindMap[entry.kind] == etype then
+      CancelEvent() -- yasaklı entity oluşmasın
+      Aeigs.enforceBlacklist(owner, entry, model)
+      return
+    end
+  end
+
   local key
   if etype == 2 and ruleOn('anti_vehicle_spawn') then key = 'veh'
   elseif etype == 1 and ruleOn('anti_ped_spawn') then key = 'ped'
@@ -64,6 +77,17 @@ end)
 AddEventHandler('weaponDamageEvent', function(sender, data)
   local src = tonumber(sender)
   if not src then return end
+
+  -- Kara listedeki silah kullanımı
+  if data and data.weaponType then
+    local entry = Aeigs.blacklistLookup and Aeigs.blacklistLookup(data.weaponType)
+    if entry and entry.kind == 'weapon' then
+      CancelEvent()
+      Aeigs.enforceBlacklist(src, entry, data.weaponType)
+      return
+    end
+  end
+
   if ruleOn('anti_illegal_weapon') and data and data.weaponDamage and data.weaponDamage > 2000 then
     TriggerEvent('aeigs:serverReport', src, 'ILLEGAL_WEAPON', 'HIGH', { dmg = data.weaponDamage })
     -- Engellemek için: CancelEvent()
@@ -74,6 +98,8 @@ end)
 -- Ortak rapor köprüsü (sunucu tespiti → API)
 -- ---------------------------------------------------------------------------
 AddEventHandler('aeigs:serverReport', function(src, dtype, severity, details)
+  -- Bypass'lı oyuncular (yöneticiler/içerik üreticiler) raporlanmaz.
+  if Aeigs.isWhitelisted and Aeigs.isWhitelisted(src) then return end
   local ids = {}
   for _, id in ipairs(GetPlayerIdentifiers(src)) do
     if id:sub(1, 8) == 'license:' then ids.license = id break end

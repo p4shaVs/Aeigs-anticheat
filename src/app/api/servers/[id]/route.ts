@@ -12,6 +12,7 @@ const patchSchema = z.object({
   ip: z.string().trim().max(64).nullable().optional(),
   maxSlots: z.number().int().min(1).max(2048).optional(),
   discordWebhook: z.string().trim().url().max(300).nullable().optional(),
+  webhookEvents: z.record(z.boolean()).optional(),
 });
 
 export const PATCH = handler(
@@ -19,11 +20,12 @@ export const PATCH = handler(
     const { server, user } = await requireOwnedServer(ctx.params.id);
     const body = patchSchema.parse(await req.json());
 
-    // config JSON içinde discordWebhook sakla
+    // config JSON içinde discordWebhook + webhookEvents sakla
     let config = server.config;
-    if (body.discordWebhook !== undefined) {
+    if (body.discordWebhook !== undefined || body.webhookEvents !== undefined) {
       const parsed = JSON.parse(server.config || "{}");
-      parsed.discordWebhook = body.discordWebhook;
+      if (body.discordWebhook !== undefined) parsed.discordWebhook = body.discordWebhook;
+      if (body.webhookEvents !== undefined) parsed.webhookEvents = body.webhookEvents;
       config = JSON.stringify(parsed);
     }
 

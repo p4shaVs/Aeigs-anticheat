@@ -7,10 +7,24 @@ import { requireOwnedServer } from "@/lib/api-guards";
 import { audit } from "@/lib/audit";
 import { clientIp } from "@/lib/session";
 
+// Oyun içi menüde bir yöneticinin kullanabileceği izinler.
+const ADMIN_PERMISSIONS = [
+  "kick", "ban", "warn", "spectate", "noclip", "revive", "tp", "bring",
+  "freeze", "godmode", "announce", "screenshot",
+] as const;
+
+// Rol → varsayılan izinler (özel izin verilmezse kullanılır).
+const ROLE_DEFAULTS: Record<string, string[]> = {
+  OWNER: [...ADMIN_PERMISSIONS],
+  ADMIN: ["kick", "ban", "warn", "spectate", "noclip", "revive", "tp", "bring", "freeze", "screenshot"],
+  MODERATOR: ["warn", "spectate", "revive", "tp", "screenshot"],
+};
+
 const schema = z.object({
   identifier: z.string().trim().min(2).max(120),
   displayName: z.string().trim().max(60).optional(),
   role: z.enum(["OWNER", "ADMIN", "MODERATOR"]).default("MODERATOR"),
+  permissions: z.array(z.enum(ADMIN_PERMISSIONS)).optional(),
 });
 
 export const POST = handler(
@@ -23,12 +37,14 @@ export const POST = handler(
     });
     if (exists) throw new ApiError(409, "Bu tanımlayıcı zaten yetkili");
 
+    const perms = body.permissions?.length ? body.permissions : ROLE_DEFAULTS[body.role];
     const admin = await db.serverAdmin.create({
       data: {
         serverId: server.id,
         identifier: body.identifier,
         displayName: body.displayName,
         role: body.role,
+        permissions: JSON.stringify(perms),
       },
     });
 

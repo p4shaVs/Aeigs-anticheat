@@ -13,10 +13,22 @@ interface Props {
     ip: string | null;
     maxSlots: number;
     discordWebhook: string;
+    webhookEvents: Record<string, boolean>;
     hasToken: boolean;
   };
   appUrl: string;
 }
+
+const WEBHOOK_EVENTS: { key: string; label: string }[] = [
+  { key: "ban", label: "Yasaklama" },
+  { key: "unban", label: "Yasak Kaldırma" },
+  { key: "kick", label: "Kick" },
+  { key: "warn", label: "Uyarı" },
+  { key: "detection", label: "Hile Tespiti" },
+  { key: "autoban", label: "Otomatik Ban" },
+  { key: "blacklist", label: "Kara Liste İhlali" },
+  { key: "connect", label: "Bağlanma" },
+];
 
 export function ServerSettings({ server, appUrl }: Props) {
   const router = useRouter();
@@ -24,6 +36,7 @@ export function ServerSettings({ server, appUrl }: Props) {
   const [ip, setIp] = useState(server.ip ?? "");
   const [maxSlots, setMaxSlots] = useState(String(server.maxSlots));
   const [webhook, setWebhook] = useState(server.discordWebhook);
+  const [events, setEvents] = useState<Record<string, boolean>>(server.webhookEvents);
   const [saving, setSaving] = useState(false);
   const [saved, setSaved] = useState(false);
   const [token, setToken] = useState<string | null>(null);
@@ -42,6 +55,7 @@ export function ServerSettings({ server, appUrl }: Props) {
           ip: ip || null,
           maxSlots: Number(maxSlots) || 64,
           discordWebhook: webhook || null,
+          webhookEvents: events,
         }),
       });
       if (res.ok) {
@@ -113,6 +127,29 @@ export function ServerSettings({ server, appUrl }: Props) {
                 onChange={(e) => setWebhook(e.target.value)}
                 placeholder="https://discord.com/api/webhooks/…"
               />
+              <p className="mt-1.5 text-xs text-slate-500">
+                Ban, kick, tespit gibi olaylar bu webhook&apos;a embed olarak gönderilir.
+              </p>
+              <div className="mt-3 grid grid-cols-2 gap-1.5 sm:grid-cols-4">
+                {WEBHOOK_EVENTS.map((e) => {
+                  const on = events[e.key] ?? false;
+                  return (
+                    <button
+                      key={e.key}
+                      type="button"
+                      onClick={() => setEvents((prev) => ({ ...prev, [e.key]: !on }))}
+                      className={
+                        "rounded-lg border px-2.5 py-1.5 text-xs font-medium transition " +
+                        (on
+                          ? "border-emerald-500/40 bg-emerald-500/10 text-emerald-300"
+                          : "border-white/10 text-slate-500 hover:bg-white/5")
+                      }
+                    >
+                      {e.label}
+                    </button>
+                  );
+                })}
+              </div>
             </div>
           </div>
           <div className="mt-4 flex items-center gap-3">

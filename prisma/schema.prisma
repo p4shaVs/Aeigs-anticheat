@@ -161,8 +161,66 @@ model Server {
   logs          ServerLog[]
   commands      ServerCommand[]
   resources     ServerResource[]
+  whitelist     Whitelist[]
+  blacklist     Blacklist[]
+  screenshots   ScreenshotRequest[]
 
   @@index([ownerId])
+}
+
+// ----------------------------------------------------------------------------
+// Bypass (koruma muafiyeti) — bu kimliklere sahip oyuncular banlanmaz/işaretlenmez
+// ----------------------------------------------------------------------------
+model Whitelist {
+  id         String   @id @default(cuid())
+  serverId   String
+  server     Server   @relation(fields: [serverId], references: [id], onDelete: Cascade)
+  kind       String   // license | discord | steam | ip
+  value      String
+  note       String?
+  createdBy  String?
+  createdAt  DateTime @default(now())
+
+  @@unique([serverId, kind, value])
+  @@index([serverId])
+}
+
+// ----------------------------------------------------------------------------
+// Kara liste — izinsiz araç/ped/nesne/silah; oyunda otomatik engellenir
+// ----------------------------------------------------------------------------
+model Blacklist {
+  id         String   @id @default(cuid())
+  serverId   String
+  server     Server   @relation(fields: [serverId], references: [id], onDelete: Cascade)
+  kind       String   // vehicle | ped | object | weapon
+  model      String   // model adı (örn. "adder") veya hash
+  label      String?
+  action     String   @default("REMOVE") // REMOVE | KICK | BAN
+  enabled    Boolean  @default(true)
+  createdBy  String?
+  createdAt  DateTime @default(now())
+
+  @@unique([serverId, kind, model])
+  @@index([serverId])
+}
+
+// ----------------------------------------------------------------------------
+// Ekran görüntüsü istekleri (canlı izleme) — panel ister, kaynak URL döndürür
+// ----------------------------------------------------------------------------
+model ScreenshotRequest {
+  id           String   @id @default(cuid())
+  serverId     String
+  server       Server   @relation(fields: [serverId], references: [id], onDelete: Cascade)
+  playerLicense String
+  playerName   String
+  status       String   @default("PENDING") // PENDING | DONE | FAILED
+  url          String?
+  requestedBy  String?
+  createdAt    DateTime @default(now())
+  completedAt  DateTime?
+
+  @@index([serverId, status])
+  @@index([serverId, createdAt])
 }
 
 // Web konsolundan gönderilen komutlar — FiveM kaynağı çeker ve çalıştırır.
@@ -188,6 +246,9 @@ model ServerAdmin {
   identifier String   // discord / license / steam identifier
   displayName String?
   role       String   @default("MODERATOR") // OWNER | ADMIN | MODERATOR
+  // Oyun içi menüde bu yöneticinin erişebileceği izinler (JSON string array).
+  // Örn: ["kick","ban","spectate","noclip","revive","tp","announce"]
+  permissions String  @default("[]")
   createdAt  DateTime @default(now())
 
   @@unique([serverId, identifier])
@@ -212,6 +273,16 @@ model Player {
   lastSeenAt  DateTime @default(now())
   playtimeSec Int      @default(0)
   trustScore  Int      @default(100)
+
+  // Canlı durum (interaktif harita / izleme) — konum, can, kalkan, aktivite
+  posX        Float?
+  posY        Float?
+  posZ        Float?
+  heading     Float?
+  health      Int?
+  armor       Int?
+  activity    String?  // walking | driving | shooting | swimming | parachuting | idle
+  ping        Int?
 
   bans        Ban[]
   detections  Detection[]

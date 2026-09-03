@@ -43,6 +43,10 @@ function Aeigs.getRules()
   return ServerConfig.rules or {}
 end
 
+-- Diğer modüllerin (live.lua, protection.lua) kullanabilmesi için köprüle.
+Aeigs.getIdents = getIdents
+Aeigs.findByLicense = findByLicense
+
 -- ---------------------------------------------------------------------------
 -- Heartbeat — sunucuyu çevrimiçi tutar, ayarları (rules) alır
 -- ---------------------------------------------------------------------------
@@ -89,6 +93,8 @@ local function refreshBans()
     end
   end)
 end
+
+Aeigs.refreshBans = refreshBans
 
 local function matchBan(ids)
   for _, b in ipairs(BanList) do

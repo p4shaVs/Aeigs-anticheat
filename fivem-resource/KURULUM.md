@@ -34,6 +34,8 @@ klasörüne kopyala. Sonra `server.cfg` dosyasına ekle:
 ```cfg
 set aeigs_api   "http://localhost:3000/api/v1"
 set aeigs_token "aeigs_srv_BURAYA_TOKEN"
+# İzleme (canlı ekran) için opsiyonel — screenshot-basic + bir yükleme hedefi:
+set aeigs_ss_upload ""     # örn. "https://your-uploader/upload"
 ensure aeigs-anticheat
 ```
 Sunucuyu başlat. Konsolda `[aeigs] Anti-Cheat başlatıldı` görürsün. Panelde
@@ -51,7 +53,55 @@ sunucu **Çevrimiçi** olur.
 | **Konsol** | Yazdığın komut sunucuda `ExecuteCommand` ile çalışır |
 | **Kaynaklar** | Sunucudaki resource'lar; **Başlat/Durdur/Yeniden Başlat** |
 | **Günlük** | Sunucu olayları (giriş/çıkış/tespit/konsol) panele akar |
-| **Analitik / Olaylar / İzleme** | Gerçek verilerle dolar (İzleme ekran görüntüsü opsiyoneldir) |
+| **İnteraktif Harita** | Oyuncular **gerçek GTA5 konumlarında**; can/kalkan/aktivite/yön anlık; 5 sn'de bir canlı yenileme |
+| **İzleme** | Oyuncunun **canlı ekran görüntüsü** (screenshot-basic gerekir) |
+| **Bypass** | Discord ID / license ile muafiyet — bu kişiler banlanmaz/işaretlenmez |
+| **Kara Liste** | Yasaklı araç/silah/ped/nesne — oyunda otomatik engellenir (REMOVE/KICK/BAN) |
+| **Yöneticiler** | Oyun içi menü izinleri (kick/ban/tp/noclip/spectate…) webden verilir |
+
+## Yeni özellikler — nasıl çalışır?
+
+### 🗺️ İnteraktif Harita (canlı konum + can + kalkan)
+Resource her **3 saniyede** çevrimiçi oyuncuların konum/can/kalkan/aktivite/yön
+verisini gönderir. Harita bunları gerçek GTA5 koordinatlarına yerleştirir; sağ
+panelden bir oyuncu seçince can/kalkan barları, aktivite, ping ve konumu görünür.
+
+### 👁️ Canlı Ekran (İzleme)
+1. Sunucuya [`screenshot-basic`](https://github.com/citizenfx/screenshot-basic) ekle.
+2. `set aeigs_ss_upload "<yükleme adresin>"` ayarla (görseli barındıran endpoint).
+3. Panelde **İzleme** veya haritada oyuncu → **Canlı Ekranı İste**. Görüntü
+   yükleme hedefine gönderilir, dönen URL panelde gösterilir.
+
+### 🛡️ Bypass (muafiyet)
+**Moderasyon → Bypass**'tan Discord ID veya license ekle. Bu kimlikler otomatik
+ban, hile tespiti raporu ve kara listeden **muaf** tutulur. (NoClip açan yönetici
+banlanmaz.)
+
+### 🚫 Kara Liste (araç/silah/ped/nesne)
+**Yönetim → Kara Liste**'den model adı ekle (örn. `rhino`, `weapon_rpg`). Oyuncu
+spawn etmeye çalışınca **oluşturma iptal edilir** ve seçtiğin işlem uygulanır:
+Kaldır / Kick / Ban.
+
+### 🎮 Oyun içi yönetici menüsü (webden izin)
+**Yönetim → Yöneticiler**'den kişiyi identifier (`discord:...`) ile ekle ve
+izinleri seç. Oyunda `/ac` yazınca izinli komutlar listelenir:
+```
+/ac kick [id] [sebep]     /ac ban [id] [sebep]      /ac warn [id] [sebep]
+/ac tp [id]   /ac bring [id]   /ac spectate [id]     /ac revive [id]
+/ac freeze [id] on|off    /ac noclip   /ac god   /ac announce [mesaj]   /ac ss [id]
+```
+İzin **her aksiyonda sunucuda** doğrulanır (client sadece arayüz). Oyun içi
+ban/kick/uyarı panele ve Discord'a da işlenir.
+
+### 🔔 Discord webhook logları
+**Ayarlar**'da webhook URL'ini gir ve hangi olayların gönderileceğini seç
+(Ban, Kick, Uyarı, Tespit, Otomatik Ban, Kara Liste İhlali, Bağlanma). Her olay
+zengin **embed** olarak Discord'a düşer.
+
+### 🚁 NoClip tespiti + otomatik ban
+Client, çarpışmasız/havada anormal hareketi tespit eder → `NOCLIP (CRITICAL)`
+raporlar. Lisansta **auto_ban** açıksa ve oyuncu **bypass'lı değilse** otomatik
+banlanır. (Menüyle açılan yönetici noclip'i tespiti tetiklemez.)
 
 ## Ban kodu nasıl çalışır?
 - Web'den birini banlayınca oyuncu oyundan atılırken **Ban Kodu: AC-XXXXXX**

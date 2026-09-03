@@ -11,8 +11,24 @@ export interface AdminRow {
   identifier: string;
   displayName: string | null;
   role: string;
+  permissions: string[];
   createdAt: string;
 }
+
+const PERMS: { key: string; label: string }[] = [
+  { key: "kick", label: "Kick" },
+  { key: "ban", label: "Ban" },
+  { key: "warn", label: "Uyar" },
+  { key: "spectate", label: "İzle" },
+  { key: "noclip", label: "NoClip" },
+  { key: "revive", label: "Canlandır" },
+  { key: "tp", label: "Işınlan" },
+  { key: "bring", label: "Getir" },
+  { key: "freeze", label: "Dondur" },
+  { key: "godmode", label: "Godmode" },
+  { key: "announce", label: "Duyuru" },
+  { key: "screenshot", label: "Ekran" },
+];
 
 const roleTone: Record<string, "violet" | "blue" | "gray"> = {
   OWNER: "violet",
@@ -36,8 +52,13 @@ export function AdminsManager({
   const [identifier, setIdentifier] = useState("");
   const [displayName, setDisplayName] = useState("");
   const [role, setRole] = useState("MODERATOR");
+  const [perms, setPerms] = useState<string[]>([]);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
+
+  function togglePerm(k: string) {
+    setPerms((p) => (p.includes(k) ? p.filter((x) => x !== k) : [...p, k]));
+  }
 
   async function add(e: React.FormEvent) {
     e.preventDefault();
@@ -47,7 +68,12 @@ export function AdminsManager({
       const res = await fetch(`/api/servers/${serverId}/admins`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ identifier, displayName: displayName || undefined, role }),
+        body: JSON.stringify({
+          identifier,
+          displayName: displayName || undefined,
+          role,
+          permissions: perms.length ? perms : undefined,
+        }),
       });
       const json = await res.json();
       if (!res.ok || !json.ok) throw new Error(json.error ?? "Eklenemedi");
@@ -96,6 +122,9 @@ export function AdminsManager({
                     </td>
                     <td className="px-4 py-3">
                       <Badge tone={roleTone[a.role] ?? "gray"}>{roleLabel[a.role] ?? a.role}</Badge>
+                      {a.permissions.length > 0 && (
+                        <p className="mt-1 text-[10px] text-slate-500">{a.permissions.length} izin</p>
+                      )}
                     </td>
                     <td className="px-4 py-3 text-slate-500">{formatDate(a.createdAt)}</td>
                     <td className="px-4 py-3 text-right">
@@ -141,6 +170,26 @@ export function AdminsManager({
               <option value="ADMIN">Yönetici</option>
               <option value="OWNER">Sahip</option>
             </select>
+          </div>
+          <div>
+            <label className="label">Oyun içi izinler (boşsa role göre atanır)</label>
+            <div className="grid grid-cols-3 gap-1.5">
+              {PERMS.map((p) => (
+                <button
+                  key={p.key}
+                  type="button"
+                  onClick={() => togglePerm(p.key)}
+                  className={
+                    "rounded-lg border px-2 py-1.5 text-[11px] font-medium transition " +
+                    (perms.includes(p.key)
+                      ? "border-brand-500/50 bg-brand-500/10 text-white"
+                      : "border-white/10 text-slate-400 hover:bg-white/5")
+                  }
+                >
+                  {p.label}
+                </button>
+              ))}
+            </div>
           </div>
           {error && <p className="text-sm text-rose-400">{error}</p>}
           <button type="submit" disabled={loading} className="btn-primary w-full">

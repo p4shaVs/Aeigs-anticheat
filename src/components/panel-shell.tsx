@@ -49,6 +49,7 @@ function serverNav(id: string): NavSection[] {
         { href: `${b}/warns`, label: "Uyarılar", icon: "warn" },
         { href: `${b}/kicks`, label: "Kickler", icon: "kick" },
         { href: `${b}/bans`, label: "Yasaklar", icon: "ban" },
+        { href: `${b}/whitelist`, label: "Bypass", icon: "shieldCheck" },
       ],
     },
     {
@@ -58,6 +59,7 @@ function serverNav(id: string): NavSection[] {
         { href: `${b}/console`, label: "Konsol", icon: "terminal" },
         { href: `${b}/events`, label: "Olaylar", icon: "activity" },
         { href: `${b}/resources`, label: "Kaynaklar", icon: "cube" },
+        { href: `${b}/blacklist`, label: "Kara Liste", icon: "lock" },
         { href: `${b}/admins`, label: "Yöneticiler", icon: "user" },
         { href: `${b}/logs`, label: "Günlük", icon: "logs" },
       ],

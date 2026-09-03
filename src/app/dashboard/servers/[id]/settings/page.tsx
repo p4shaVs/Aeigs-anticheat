@@ -1,5 +1,5 @@
 import { getOwnedServer } from "@/lib/guards";
-import { parseJson } from "@/lib/utils";
+import { readWebhookConfig } from "@/lib/discord";
 import { ServerSettings } from "./server-settings";
 
 export const dynamic = "force-dynamic";
@@ -10,7 +10,7 @@ export default async function SettingsPage({
   params: { id: string };
 }) {
   const { server } = await getOwnedServer(params.id);
-  const config = parseJson<{ discordWebhook?: string }>(server.config, {});
+  const wh = readWebhookConfig(server.config);
 
   return (
     <ServerSettings
@@ -19,7 +19,8 @@ export default async function SettingsPage({
         name: server.name,
         ip: server.ip,
         maxSlots: server.maxSlots,
-        discordWebhook: config.discordWebhook ?? "",
+        discordWebhook: wh.url,
+        webhookEvents: wh.events,
         hasToken: !!server.apiTokenHash,
       }}
       appUrl={process.env.APP_URL ?? ""}

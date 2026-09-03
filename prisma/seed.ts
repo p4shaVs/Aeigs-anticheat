@@ -170,6 +170,7 @@ async function main() {
     const name = `${pick(firstNames)}${pick(suffix)}${rand(1, 99)}`;
     const online = i < 22;
     const lic = `license:${randomBytes(20).toString("hex")}`;
+    const acts = ["walking", "driving", "shooting", "swimming", "idle"];
     const p = await db.player.create({
       data: {
         serverId: server.id,
@@ -183,6 +184,19 @@ async function main() {
         playtimeSec: rand(600, 500000),
         firstSeenAt: new Date(Date.now() - rand(1, 90) * 24 * 3600 * 1000),
         lastSeenAt: online ? new Date() : new Date(Date.now() - rand(1, 72) * 3600 * 1000),
+        // Çevrimiçi oyunculara canlı konum/can/kalkan (harita + izleme demo verisi)
+        ...(online
+          ? {
+              posX: rand(-3500, 4000),
+              posY: rand(-3500, 7000),
+              posZ: rand(20, 300),
+              heading: rand(0, 359),
+              health: rand(120, 200),
+              armor: rand(0, 100),
+              activity: pick(acts),
+              ping: rand(15, 120),
+            }
+          : {}),
       },
     });
     players.push({ id: p.id, name: p.name, license: lic, online });
@@ -277,6 +291,36 @@ async function main() {
     });
   }
   console.log("✓ Loglar oluşturuldu");
+
+  // --- Bypass (whitelist) demo ---
+  await db.whitelist.createMany({
+    data: [
+      { serverId: server.id, kind: "discord", value: `discord:${rand(100000000000000000, 999999999999999999)}`, note: "Sunucu sahibi", createdBy: "admin" },
+      { serverId: server.id, kind: "license", value: players[0].license, note: "Baş yönetici", createdBy: "admin" },
+    ],
+  });
+
+  // --- Kara liste demo ---
+  await db.blacklist.createMany({
+    data: [
+      { serverId: server.id, kind: "vehicle", model: "rhino", label: "Tank", action: "BAN", createdBy: "admin" },
+      { serverId: server.id, kind: "vehicle", model: "lazer", label: "Jet", action: "KICK", createdBy: "admin" },
+      { serverId: server.id, kind: "weapon", model: "weapon_rpg", label: "RPG", action: "REMOVE", createdBy: "admin" },
+      { serverId: server.id, kind: "object", model: "prop_gold_bar", label: "Altın külçe", action: "REMOVE", createdBy: "admin" },
+    ],
+  });
+
+  // --- Yönetici (oyun içi menü izinleri) demo ---
+  await db.serverAdmin.create({
+    data: {
+      serverId: server.id,
+      identifier: `discord:${rand(100000000000000000, 999999999999999999)}`,
+      displayName: "Baş Yönetici",
+      role: "ADMIN",
+      permissions: JSON.stringify(["kick", "ban", "warn", "spectate", "noclip", "revive", "tp", "bring", "freeze", "screenshot"]),
+    },
+  });
+  console.log("✓ Bypass + kara liste + yönetici demo verileri");
 
   // --- Örnek sipariş ---
   await db.order.create({

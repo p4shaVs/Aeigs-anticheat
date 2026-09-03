@@ -1,5 +1,6 @@
 import { getOwnedServer } from "@/lib/guards";
 import { db } from "@/lib/db";
+import { parseJson } from "@/lib/utils";
 import { AdminsManager, type AdminRow } from "./admins-manager";
 
 export const dynamic = "force-dynamic";
@@ -20,6 +21,7 @@ export default async function AdminsPage({
     identifier: a.identifier,
     displayName: a.displayName,
     role: a.role,
+    permissions: parseJson<string[]>(a.permissions, []),
     createdAt: a.createdAt.toISOString(),
   }));
 

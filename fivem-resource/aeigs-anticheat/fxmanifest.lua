@@ -11,11 +11,13 @@ server_scripts {
   'config.lua',
   'server/http.lua',
   'server/main.lua',
+  'server/live.lua',
   'server/protection.lua',
 }
 
--- Client tarafı: temel tespitler + izleme kancaları
+-- Client tarafı: temel tespitler + canlı veri + yönetici menüsü + izleme kancaları
 client_scripts {
   'config.lua',
   'client/main.lua',
+  'client/admin.lua',
 }
