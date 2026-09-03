@@ -226,13 +226,21 @@ end
 RegisterNetEvent('aeigs:report', function(dtype, severity, details)
   local src = source
   local ids = getIdents(src)
+  local pname = GetPlayerName(src) or ('Player#' .. src)
   Aeigs.request('/detections', 'POST', {
     type = tostring(dtype or 'UNKNOWN'),
     severity = tostring(severity or 'MEDIUM'),
-    playerName = GetPlayerName(src) or ('Player#' .. src),
+    playerName = pname,
     license = ids.license,
     details = type(details) == 'table' and details or { info = tostring(details or '') },
-  }, nil)
+  }, function(ok, data)
+    -- Otomatik ban geldiyse oyuncuyu anında at (noclip/superjump/teleport dahil).
+    if ok and data and data.banned and GetPlayerName(src) then
+      DropPlayer(src, ('[Aeigs] Yasaklandınız | Sebep: %s | Ban Kodu: %s')
+        :format(tostring(dtype or ''), data.banCode or '—'))
+      refreshBans()
+    end
+  end)
 end)
 
 -- ---------------------------------------------------------------------------

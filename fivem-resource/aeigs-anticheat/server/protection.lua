@@ -110,6 +110,12 @@ AddEventHandler('aeigs:serverReport', function(src, dtype, severity, details)
     playerName = name(src),
     license = ids.license,
     details = details or {},
-  }, nil)
+  }, function(ok, data)
+    if ok and data and data.banned and GetPlayerName(src) then
+      DropPlayer(src, ('[Aeigs] Yasaklandınız | Sebep: %s | Ban Kodu: %s')
+        :format(tostring(dtype or ''), data.banCode or '—'))
+      if Aeigs.refreshBans then Aeigs.refreshBans() end
+    end
+  end)
   Aeigs.log('DETECTION', 'anticheat', ('%s → %s'):format(dtype, name(src)))
 end)

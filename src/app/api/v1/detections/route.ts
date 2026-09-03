@@ -85,11 +85,24 @@ export const POST = handler(async (req: NextRequest) => {
     (server as any).licenseKey?.features ?? "[]",
     []
   );
-  const autoBan =
-    body.severity === "CRITICAL" && features.includes("auto_ban") && player && !whitelisted;
+  const eligible =
+    body.severity === "CRITICAL" && features.includes("auto_ban") && !!player && !whitelisted;
+
+  // Tekrarlı ban engeli: oyuncunun zaten aktif bir banı varsa yeni ban atma.
+  // (noclip + teleport + superjump aynı anda geldiğinde 3 ban oluşmasını önler.)
+  let existingBan: { code: string | null } | null = null;
+  if (eligible && player) {
+    existingBan = await db.ban.findFirst({
+      where: { serverId: server.id, playerId: player.id, active: true },
+      select: { code: true },
+    });
+  }
+
+  const autoBan = eligible && player && !existingBan;
+  let banCode: string | null = existingBan?.code ?? null;
 
   if (autoBan && player) {
-    const banCode = generateBanCode();
+    banCode = generateBanCode();
     await db.$transaction([
       db.ban.create({
         data: {
@@ -107,6 +120,18 @@ export const POST = handler(async (req: NextRequest) => {
           permanent: true,
         },
       }),
+      // Kuyruğa BAN aksiyonu ekle — kaynak pollActions ile oyuncuyu anında atar.
+      db.punishAction.create({
+        data: {
+          serverId: server.id,
+          playerId: player.id,
+          type: "BAN",
+          reason: `Otomatik ban: ${body.type}`,
+          issuedBy: "AntiCheat",
+          playerName: player.name,
+          status: "PENDING",
+        },
+      }),
       db.player.update({
         where: { id: player.id },
         data: { online: false, trustScore: 0 },
@@ -122,5 +147,6 @@ export const POST = handler(async (req: NextRequest) => {
     });
   }
 
-  return ok({ recorded: true, autoBan: !!autoBan, whitelisted });
+  // banned=true → kaynak bu oyuncuyu (yeni ban ya da mevcut ban) hemen atmalı.
+  return ok({ recorded: true, autoBan: !!autoBan, banned: eligible && !!player, banCode, whitelisted });
 });

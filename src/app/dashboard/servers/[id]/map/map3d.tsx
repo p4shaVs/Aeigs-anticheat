@@ -167,29 +167,41 @@ export default function Map3D({
         holder.position.set(x, 0, z);
         holder.userData.id = m.id;
 
-        const pinH = m.selected ? 46 : 30;
-        const stick = new THREE.Mesh(
-          new THREE.CylinderGeometry(0.8, 0.8, pinH, 6),
-          new THREE.MeshBasicMaterial({ color: col, transparent: true, opacity: m.dim ? 0.15 : 0.7 })
-        );
-        stick.position.set(0, y + pinH / 2, 0);
-        holder.add(stick);
+        const op = m.dim ? 0.25 : 1;
+        const pinH = m.selected ? 64 : 44;
 
+        // Yerden yükselen ışık huzmesi (konumu net gösterir)
+        const beam = new THREE.Mesh(
+          new THREE.CylinderGeometry(m.selected ? 2.2 : 1.4, 0.4, pinH, 8),
+          new THREE.MeshBasicMaterial({ color: col, transparent: true, opacity: m.dim ? 0.12 : 0.55 })
+        );
+        beam.position.set(0, y + pinH / 2, 0);
+        holder.add(beam);
+
+        // Zemin halkası (oyuncunun bastığı nokta)
+        const spot = new THREE.Mesh(
+          new THREE.RingGeometry(m.selected ? 8 : 5, m.selected ? 12 : 8, 28),
+          new THREE.MeshBasicMaterial({ color: col, side: THREE.DoubleSide, transparent: true, opacity: m.dim ? 0.2 : 0.75 })
+        );
+        spot.rotation.x = -Math.PI / 2;
+        spot.position.set(0, y + 0.6, 0);
+        holder.add(spot);
+
+        // Tepe küresi
         const head = new THREE.Mesh(
-          new THREE.SphereGeometry(m.selected ? 9 : 6, 12, 12),
-          new THREE.MeshBasicMaterial({ color: col, transparent: true, opacity: m.dim ? 0.2 : 1 })
+          new THREE.SphereGeometry(m.selected ? 8 : 5.5, 14, 14),
+          new THREE.MeshBasicMaterial({ color: col, transparent: true, opacity: op })
         );
         head.position.set(0, y + pinH, 0);
         holder.add(head);
 
         if (m.selected) {
-          const ring = new THREE.Mesh(
-            new THREE.RingGeometry(12, 16, 24),
-            new THREE.MeshBasicMaterial({ color: col, side: THREE.DoubleSide, transparent: true, opacity: 0.5 })
+          const halo = new THREE.Mesh(
+            new THREE.SphereGeometry(13, 16, 16),
+            new THREE.MeshBasicMaterial({ color: col, transparent: true, opacity: 0.18 })
           );
-          ring.rotation.x = -Math.PI / 2;
-          ring.position.set(0, y + 1, 0);
-          holder.add(ring);
+          halo.position.set(0, y + pinH, 0);
+          holder.add(halo);
         }
         grp.add(holder);
       }
