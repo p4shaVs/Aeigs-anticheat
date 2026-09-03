@@ -1,6 +1,7 @@
 import { getOwnedServer } from "@/lib/guards";
 import { db } from "@/lib/db";
 import { PageHeader } from "@/components/ui";
+import { MODEL_COUNTS } from "@/lib/model-catalog";
 import { ModelSearch, type BlacklistState } from "./model-search";
 
 export const dynamic = "force-dynamic";
@@ -28,6 +29,7 @@ export default async function BlacklistPage({ params }: { params: { id: string }
       <ModelSearch
         serverId={server.id}
         state={state}
+        counts={MODEL_COUNTS}
         imgBase={process.env.NEXT_PUBLIC_MODEL_IMG_BASE ?? ""}
       />
     </>

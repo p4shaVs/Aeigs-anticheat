@@ -1,16 +1,9 @@
 "use client";
 
-import { useMemo, useState } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
 import { Icons } from "@/components/icons";
 import { cn } from "@/lib/utils";
-import {
-  GTA_MODELS,
-  MODEL_KIND_META,
-  countByKind,
-  joaat,
-  type GtaModel,
-  type ModelKind,
-} from "@/lib/gta-models";
+import { MODEL_KIND_META, joaat, type GtaModel, type ModelKind } from "@/lib/gta-models";
 
 export interface BlacklistState {
   id: string;
@@ -20,11 +13,7 @@ export interface BlacklistState {
 }
 
 const KIND_ICON: Record<string, keyof typeof Icons> = {
-  vehicle: "cube",
-  ped: "user",
-  weapon: "bolt",
-  object: "cube",
-  explosion: "bolt",
+  vehicle: "cube", ped: "user", weapon: "bolt", object: "cube", explosion: "bolt",
 };
 
 const ACTIONS = [
@@ -47,32 +36,67 @@ const PAGE = 60;
 export function ModelSearch({
   serverId,
   state,
+  counts,
   imgBase,
 }: {
   serverId: string;
   state: Record<string, BlacklistState>;
+  counts: Record<string, number>;
   imgBase: string;
 }) {
   const [tab, setTab] = useState("all");
   const [query, setQuery] = useState("");
+  const [debounced, setDebounced] = useState("");
   const [action, setAction] = useState<(typeof ACTIONS)[number]["key"]>("BAN");
-  const [limit, setLimit] = useState(PAGE);
+  const [items, setItems] = useState<GtaModel[]>([]);
+  const [total, setTotal] = useState(0);
+  const [loading, setLoading] = useState(false);
   const [local, setLocal] = useState(state);
   const [busy, setBusy] = useState<string | null>(null);
+  const sentinel = useRef<HTMLDivElement>(null);
 
-  const counts = useMemo(() => countByKind(), []);
+  // Arama debounce
+  useEffect(() => {
+    const t = setTimeout(() => setDebounced(query.trim()), 250);
+    return () => clearTimeout(t);
+  }, [query]);
 
-  const filtered = useMemo(() => {
-    const q = query.trim().toLowerCase();
-    return GTA_MODELS.filter((m) => {
-      if (tab !== "all" && m.kind !== tab) return false;
-      if (!q) return true;
-      return m.name.includes(q) || m.label.toLowerCase().includes(q) || String(m.hash).includes(q);
-    });
-  }, [tab, query]);
+  const load = useCallback(
+    async (reset: boolean) => {
+      setLoading(true);
+      try {
+        const offset = reset ? 0 : items.length;
+        const params = new URLSearchParams({ kind: tab, q: debounced, offset: String(offset), limit: String(PAGE) });
+        const res = await fetch(`/api/gta-models?${params}`);
+        const json = await res.json();
+        if (json.ok) {
+          setTotal(json.data.total);
+          setItems((prev) => (reset ? json.data.items : [...prev, ...json.data.items]));
+        }
+      } finally {
+        setLoading(false);
+      }
+    },
+    [tab, debounced, items.length]
+  );
 
-  const shown = filtered.slice(0, limit);
-  const isListed = (m: GtaModel) => !!local[m.name];
+  // tab / arama değişince baştan yükle
+  useEffect(() => {
+    setItems([]);
+    load(true);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [tab, debounced]);
+
+  // Sonsuz kaydırma
+  useEffect(() => {
+    const el = sentinel.current;
+    if (!el) return;
+    const obs = new IntersectionObserver((entries) => {
+      if (entries[0].isIntersecting && !loading && items.length < total) load(false);
+    }, { rootMargin: "400px" });
+    obs.observe(el);
+    return () => obs.disconnect();
+  }, [loading, items.length, total, load]);
 
   async function setKara(m: GtaModel) {
     setBusy(m.name);
@@ -86,7 +110,6 @@ export function ModelSearch({
       if (json.ok) {
         setLocal((s) => ({ ...s, [m.name]: { id: json.data.id, action, enabled: true, kind: m.kind } }));
       } else if (res.status === 409) {
-        // zaten var — durumu senkron tut
         setLocal((s) => ({ ...s, [m.name]: { id: s[m.name]?.id ?? "", action, enabled: true, kind: m.kind } }));
       }
     } finally {
@@ -104,11 +127,7 @@ export function ModelSearch({
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ id: cur.id }),
       });
-      setLocal((s) => {
-        const n = { ...s };
-        delete n[m.name];
-        return n;
-      });
+      setLocal((s) => { const n = { ...s }; delete n[m.name]; return n; });
     } finally {
       setBusy(null);
     }
@@ -122,14 +141,8 @@ export function ModelSearch({
       {/* Kategori sekmeleri */}
       <div className="mb-4 flex flex-wrap items-center gap-1 border-b border-white/5">
         {TABS.map((t) => (
-          <button
-            key={t.key}
-            onClick={() => { setTab(t.key); setLimit(PAGE); }}
-            className={cn(
-              "relative px-4 py-2.5 text-sm font-medium transition",
-              tab === t.key ? "text-white" : "text-slate-400 hover:text-slate-200"
-            )}
-          >
+          <button key={t.key} onClick={() => setTab(t.key)}
+            className={cn("relative px-4 py-2.5 text-sm font-medium transition", tab === t.key ? "text-white" : "text-slate-400 hover:text-slate-200")}>
             {t.label} <span className="text-slate-500">( {t.kind ? counts[t.kind] ?? 0 : counts.all} )</span>
             {tab === t.key && <span className="absolute inset-x-2 -bottom-px h-0.5 rounded-full bg-brand-500" />}
           </button>
@@ -140,24 +153,15 @@ export function ModelSearch({
       <div className="mb-3 flex flex-col gap-2 sm:flex-row sm:items-center">
         <div className="relative flex-1">
           <Icons.search size={18} className="absolute left-4 top-1/2 -translate-y-1/2 text-slate-500" />
-          <input
-            className="input h-12 pl-11 text-[15px]"
-            placeholder="Model adına veya hash koduna göre arama yapın…"
-            value={query}
-            onChange={(e) => { setQuery(e.target.value); setLimit(PAGE); }}
-          />
+          <input className="input h-12 pl-11 text-[15px]" placeholder="Model adına veya hash koduna göre arama yapın…"
+            value={query} onChange={(e) => setQuery(e.target.value)} />
         </div>
         <div className="flex items-center gap-1.5 rounded-xl border border-white/10 bg-base-900/60 p-1">
           <span className="px-2 text-xs text-slate-500">Kara liste işlemi:</span>
           {ACTIONS.map((a) => (
-            <button
-              key={a.key}
-              onClick={() => setAction(a.key)}
-              className={cn(
-                "rounded-lg px-3 py-1.5 text-xs font-medium transition",
-                action === a.key ? "bg-brand-500/15 text-white ring-1 ring-inset ring-brand-500/40" : "text-slate-400 hover:bg-white/5"
-              )}
-            >
+            <button key={a.key} onClick={() => setAction(a.key)}
+              className={cn("rounded-lg px-3 py-1.5 text-xs font-medium transition",
+                action === a.key ? "bg-brand-500/15 text-white ring-1 ring-inset ring-brand-500/40" : "text-slate-400 hover:bg-white/5")}>
               {a.label}
             </button>
           ))}
@@ -165,21 +169,17 @@ export function ModelSearch({
       </div>
 
       <p className="mb-4 font-mono text-xs text-slate-500">
-        Son senkronizasyon: {stamp} &nbsp;|&nbsp; Toplam model sayısı: {counts.all} &nbsp;|&nbsp; Kara listede: {Object.keys(local).length}
+        Son senkronizasyon: {stamp} &nbsp;|&nbsp; Toplam model sayısı: {counts.all} &nbsp;|&nbsp; Sonuç: {total} &nbsp;|&nbsp; Kara listede: {Object.keys(local).length}
       </p>
 
       {/* Grid */}
-      {shown.length === 0 ? (
+      {items.length === 0 && !loading ? (
         <div className="rounded-2xl border border-white/5 bg-base-850/60 py-16 text-center text-slate-500">
-          Eşleşen model yok. Aradığınız modeli manuel eklemek için tam adını yazıp aşağıdaki butonu kullanın.
+          Eşleşen model yok.
           {query.trim() && (
             <div className="mt-4">
-              <button
-                className="btn-danger"
-                onClick={() =>
-                  setKara({ name: query.trim().toLowerCase(), label: query.trim(), kind: "object", hash: joaat(query.trim()) })
-                }
-              >
+              <button className="btn-danger"
+                onClick={() => setKara({ name: query.trim().toLowerCase(), label: query.trim(), kind: "object", hash: joaat(query.trim()) })}>
                 <Icons.ban size={15} /> «{query.trim()}» kara listeye ekle
               </button>
             </div>
@@ -187,45 +187,26 @@ export function ModelSearch({
         </div>
       ) : (
         <div className="grid grid-cols-1 gap-3 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
-          {shown.map((m) => (
-            <ModelCard
-              key={m.kind + m.name}
-              m={m}
-              listed={isListed(m)}
-              busy={busy === m.name}
-              imgBase={imgBase}
-              onKara={() => setKara(m)}
-              onBeyaz={() => setBeyaz(m)}
-            />
+          {items.map((m) => (
+            <ModelCard key={m.kind + m.name} m={m} listed={!!local[m.name]} busy={busy === m.name}
+              imgBase={imgBase} onKara={() => setKara(m)} onBeyaz={() => setBeyaz(m)} />
           ))}
         </div>
       )}
 
-      {limit < filtered.length && (
-        <div className="mt-6 text-center">
-          <button className="btn-secondary" onClick={() => setLimit((l) => l + PAGE)}>
-            Daha fazla göster ({filtered.length - limit})
-          </button>
-        </div>
+      <div ref={sentinel} className="h-10" />
+      {loading && <p className="py-4 text-center text-sm text-slate-500">Yükleniyor…</p>}
+      {!loading && items.length > 0 && items.length >= total && (
+        <p className="py-4 text-center text-xs text-slate-600">Tüm sonuçlar gösterildi ({total})</p>
       )}
     </div>
   );
 }
 
 function ModelCard({
-  m,
-  listed,
-  busy,
-  imgBase,
-  onKara,
-  onBeyaz,
+  m, listed, busy, imgBase, onKara, onBeyaz,
 }: {
-  m: GtaModel;
-  listed: boolean;
-  busy: boolean;
-  imgBase: string;
-  onKara: () => void;
-  onBeyaz: () => void;
+  m: GtaModel; listed: boolean; busy: boolean; imgBase: string; onKara: () => void; onBeyaz: () => void;
 }) {
   const [imgError, setImgError] = useState(false);
   const Icon = Icons[KIND_ICON[m.kind] ?? "cube"];
@@ -233,25 +214,20 @@ function ModelCard({
 
   return (
     <div className="overflow-hidden rounded-2xl border border-white/5 bg-base-850/60 transition hover:border-white/10">
-      {/* Görsel alanı */}
       <div className="relative aspect-[16/10] bg-gradient-to-br from-slate-700/25 to-base-950">
         <span className="absolute left-2.5 top-2.5 z-10 rounded-md bg-black/50 px-2 py-0.5 text-[10px] font-semibold uppercase tracking-wide text-emerald-300 backdrop-blur">
           {MODEL_KIND_META[m.kind].label}
         </span>
         {src && !imgError ? (
           // eslint-disable-next-line @next/next/no-img-element
-          <img src={src} alt={m.label} className="h-full w-full object-cover" onError={() => setImgError(true)} />
+          <img src={src} alt={m.label} className="h-full w-full object-cover" onError={() => setImgError(true)} loading="lazy" />
         ) : (
           <>
             <div className="absolute inset-0 bg-grid-faint [background-size:16px_16px] opacity-25" />
-            <div className="absolute inset-0 grid place-items-center text-slate-600">
-              <Icon size={34} />
-            </div>
+            <div className="absolute inset-0 grid place-items-center text-slate-600"><Icon size={34} /></div>
           </>
         )}
       </div>
-
-      {/* Bilgi */}
       <div className="p-3">
         <div className="mb-2 flex items-start justify-between gap-2">
           <div className="min-w-0">
@@ -264,31 +240,15 @@ function ModelCard({
           <p className="truncate font-mono text-xs text-slate-500">{m.hash}</p>
           <CopyBtn value={String(m.hash)} title="Hash kopyala" />
         </div>
-
-        {/* Toggle: Beyaz / Kara liste */}
         <div className="flex gap-2">
-          <button
-            onClick={onBeyaz}
-            disabled={busy}
-            className={cn(
-              "flex-1 rounded-lg border px-3 py-1.5 text-xs font-medium transition",
-              !listed
-                ? "border-emerald-500/40 bg-emerald-500/10 text-emerald-300"
-                : "border-white/10 text-slate-400 hover:bg-white/5"
-            )}
-          >
+          <button onClick={onBeyaz} disabled={busy}
+            className={cn("flex-1 rounded-lg border px-3 py-1.5 text-xs font-medium transition",
+              !listed ? "border-emerald-500/40 bg-emerald-500/10 text-emerald-300" : "border-white/10 text-slate-400 hover:bg-white/5")}>
             Beyaz liste
           </button>
-          <button
-            onClick={onKara}
-            disabled={busy}
-            className={cn(
-              "flex-1 rounded-lg border px-3 py-1.5 text-xs font-medium transition",
-              listed
-                ? "border-rose-500/50 bg-rose-500/15 text-rose-300"
-                : "border-white/10 text-slate-400 hover:bg-white/5"
-            )}
-          >
+          <button onClick={onKara} disabled={busy}
+            className={cn("flex-1 rounded-lg border px-3 py-1.5 text-xs font-medium transition",
+              listed ? "border-rose-500/50 bg-rose-500/15 text-rose-300" : "border-white/10 text-slate-400 hover:bg-white/5")}>
             Kara liste
           </button>
         </div>
@@ -300,16 +260,9 @@ function ModelCard({
 function CopyBtn({ value, title }: { value: string; title: string }) {
   const [ok, setOk] = useState(false);
   return (
-    <button
-      title={title}
-      onClick={() => {
-        navigator.clipboard?.writeText(value).then(() => {
-          setOk(true);
-          setTimeout(() => setOk(false), 1200);
-        });
-      }}
-      className="grid h-7 w-7 shrink-0 place-items-center rounded-md border border-white/10 text-slate-500 transition hover:text-slate-200"
-    >
+    <button title={title}
+      onClick={() => { navigator.clipboard?.writeText(value).then(() => { setOk(true); setTimeout(() => setOk(false), 1200); }); }}
+      className="grid h-7 w-7 shrink-0 place-items-center rounded-md border border-white/10 text-slate-500 transition hover:text-slate-200">
       <Icons.copy size={13} className={ok ? "text-emerald-400" : ""} />
     </button>
   );
