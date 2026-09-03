@@ -19,5 +19,6 @@ server_scripts {
 client_scripts {
   'config.lua',
   'client/main.lua',
+  'client/weapons.lua',
   'client/admin.lua',
 }

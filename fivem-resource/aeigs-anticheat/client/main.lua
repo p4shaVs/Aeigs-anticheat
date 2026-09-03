@@ -64,6 +64,7 @@ end)
 local noclipTicks = 0
 local godTicks = 0
 local lastPos = nil
+local lastDist = 0
 
 CreateThread(function()
   while true do
@@ -123,13 +124,23 @@ CreateThread(function()
       end
     end
 
-    -- ---- TELEPORT ---- (yetkili ışınlama muafiyeti + spawn muafiyeti)
-    if lastPos and not inVeh and now > AeigsTpGrace and not guard then
+    -- ---- TELEPORT ---- (tek tuşla başka konuma ışınlanma)
+    -- Titiz: yalnızca YERDE, NORMAL durumdayken ANİ tek sıçrama teleporttur.
+    -- NoClip sürekli hızlı hareket eder (önceki tick de büyük) → teleport SAYILMAZ.
+    -- Araç, düşme, yüzme, paraşüt, noclip (çarpışmasız/havada) hariç tutulur.
+    if lastPos and now > AeigsTpGrace and not guard then
       local dist = #(coords - lastPos)
-      -- 0.5 sn'de 120m'den fazla yer değişimi (yaya) = teleport
-      if dist > 120.0 and not IsPedFalling(ped) then
-        report('TELEPORT', 'CRITICAL', { distance = dist })
+      local collisionOff = GetEntityCollisionDisabled(ped)
+      local heightAbove = GetEntityHeightAboveGround(ped)
+      local normalState =
+        not inVeh and not collisionOff and not IsPedFalling(ped)
+        and not IsPedSwimming(ped) and GetPedParachuteState(ped) == 0
+        and not IsPedRagdoll(ped) and not IsPedJumping(ped) and heightAbove < 6.0
+      -- Ani sıçrama: bu tick > 140m ama önceki tick < 40m (yani yürürken birden atladı)
+      if normalState and dist > 140.0 and lastDist < 40.0 then
+        report('TELEPORT', 'CRITICAL', { distance = math.floor(dist) })
       end
+      lastDist = dist
     end
     lastPos = coords
   end

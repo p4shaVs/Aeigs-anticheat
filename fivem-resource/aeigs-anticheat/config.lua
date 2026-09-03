@@ -10,8 +10,8 @@ Config.ApiBase = GetConvar('aeigs_api', 'http://localhost:3000/api/v1')
 Config.Token   = GetConvar('aeigs_token', '')
 
 -- Zamanlayıcılar (saniye)
-Config.HeartbeatInterval   = 30   -- sunucuyu çevrimiçi tutar
-Config.PlayerSyncInterval  = 20   -- oyuncu listesini gönderir
+Config.HeartbeatInterval   = 20   -- sunucuyu çevrimiçi tutar
+Config.PlayerSyncInterval  = 10   -- oyuncu listesini gönderir (bağlanınca da anında)
 Config.ActionPollInterval  = 5    -- panelden gelen ceza/komutları çeker
 Config.BanRefreshInterval  = 60   -- ban listesini tazeler
 Config.ResourceSyncInterval= 45   -- kaynak listesini gönderir
@@ -35,6 +35,19 @@ Config.ScreenshotField     = 'files[]'
 
 -- Oyun içi yönetici menüsü komutu (chat): /ac
 Config.AdminCommand = 'ac'
+
+-- ---------------------------------------------------------------------------
+-- Silah tespiti eşikleri (TİTİZ — yanlış pozitifi önlemek için yüksek tutuldu)
+-- ---------------------------------------------------------------------------
+-- Damage Multiplier: tek atışta bu değerin üstü hasar = hile (çoğu silah <150,
+-- keskin nişancı ~ yüksek olabilir; 400 güvenli tavan).
+Config.MaxWeaponDamage      = 400
+Config.DamageConfirmHits    = 2     -- kaç kez üst üste aşarsa raporla
+-- Explosive Bullets: 8 sn içinde bu kadar "mermi patlaması" = patlayıcı mermi
+Config.ExplosiveBulletMax   = 4
+-- Infinite Ammo / No Reload: kaç ardışık örnekte (0.5 sn) ateş edip mermi/şarjör
+-- hiç azalmazsa hile say (5 ~ 2.5 sn kesintisiz ateş).
+Config.AmmoConfirmSamples   = 6
 
 -- İzinli kaynaklar dışından spawn olan entity'leri işaretle (protection.lua)
 Config.Debug = false

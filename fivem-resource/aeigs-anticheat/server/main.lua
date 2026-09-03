@@ -59,9 +59,16 @@ local function heartbeat()
   }, function(ok, data)
     if ok and data and data.config then
       ServerConfig = data.config
+      -- Client tespitleri (silah/ammo/noclip vb.) kuralları bilsin diye yayınla.
+      TriggerClientEvent('aeigs:rules', -1, ServerConfig.rules or {})
     end
   end)
 end
+
+-- Yeni bağlanan client mevcut kuralları ister.
+RegisterNetEvent('aeigs:requestRules', function()
+  TriggerClientEvent('aeigs:rules', source, ServerConfig.rules or {})
+end)
 
 -- ---------------------------------------------------------------------------
 -- Oyuncu senkronizasyonu — license / steam / discord / ip / isim
@@ -123,11 +130,21 @@ AddEventHandler('playerConnecting', function(name, setKickReason, deferrals)
   end
   deferrals.done()
   Aeigs.log('INFO', 'connect', ('%s bağlanıyor'):format(name))
+  -- Oyuncu tam katıldıktan sonra listeyi hemen güncelle (panelde anında görünsün)
+  CreateThread(function()
+    Wait(4000)
+    pcall(syncPlayers)
+  end)
 end)
 
 AddEventHandler('playerDropped', function(reason)
   local src = source
   Aeigs.log('INFO', 'disconnect', ('%s ayrıldı (%s)'):format(GetPlayerName(src) or src, reason or ''))
+  -- Ayrılınca listeyi hemen güncelle (panelden düşsün)
+  CreateThread(function()
+    Wait(1500)
+    pcall(syncPlayers)
+  end)
 end)
 
 -- ---------------------------------------------------------------------------

@@ -26,13 +26,33 @@ local function name(src) return GetPlayerName(src) or ('Player#' .. src) end
 -- ---------------------------------------------------------------------------
 -- Patlama koruması
 -- ---------------------------------------------------------------------------
+-- Patlayıcı mermi sayaçları (oyuncu bazlı, kayan pencere)
+local expBullet = {}
+
 AddEventHandler('explosionEvent', function(sender, ev)
   -- sender: patlamayı tetikleyen oyuncu (net id string olabilir)
   local src = tonumber(sender)
   if not src or src <= 0 then return end
+  local etype = ev and ev.explosionType
+
+  -- Patlayıcı mermi (explosionType 18 = BULLET). TİTİZ: tek patlama değil,
+  -- kısa sürede birden fazla mermi-patlaması = patlayıcı mermi hilesi.
+  if ruleOn('anti_explosive_bullets') and etype == 18 then
+    local now = GetGameTimer()
+    local b = expBullet[src]
+    if not b or now > b.reset then b = { n = 0, reset = now + 8000 }; expBullet[src] = b end
+    b.n = b.n + 1
+    if b.n > (Config.ExplosiveBulletMax or 4) then
+      expBullet[src] = nil
+      CancelEvent()
+      TriggerEvent('aeigs:serverReport', src, 'EXPLOSIVE_BULLETS', 'CRITICAL', { count = b.n })
+      return
+    end
+  end
+
   if ruleOn('anti_explosion_spam') then
     if tooFast('expl:' .. src, 8, 10000) then
-      TriggerEvent('aeigs:serverReport', src, 'EXPLOSION', 'HIGH', { type = ev and ev.explosionType })
+      TriggerEvent('aeigs:serverReport', src, 'EXPLOSION', 'HIGH', { type = etype })
       -- Engellemek için: CancelEvent()
     end
   end
@@ -91,6 +111,16 @@ AddEventHandler('weaponDamageEvent', function(sender, data)
   if ruleOn('anti_illegal_weapon') and data and data.weaponDamage and data.weaponDamage > 2000 then
     TriggerEvent('aeigs:serverReport', src, 'ILLEGAL_WEAPON', 'HIGH', { dmg = data.weaponDamage })
     -- Engellemek için: CancelEvent()
+  end
+
+  -- Damage Multiplier limiti — tek atışta anormal hasar. TİTİZ: birkaç kez
+  -- üst üste tavanı aşınca raporla (tek fluke ban atmasın).
+  if ruleOn('anti_damage_multiplier') and data and data.weaponDamage
+      and data.weaponDamage > (Config.MaxWeaponDamage or 400)
+      and data.weaponDamage <= 2000 then
+    if tooFast('dmgmul:' .. src, (Config.DamageConfirmHits or 2) - 1, 6000) then
+      TriggerEvent('aeigs:serverReport', src, 'DAMAGE_MULTIPLIER', 'CRITICAL', { dmg = math.floor(data.weaponDamage) })
+    end
   end
 end)
 
