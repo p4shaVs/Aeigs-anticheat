@@ -2,19 +2,16 @@
 -- İzinler webden verilir; sunucu her aksiyonda izni doğrular (client sadece arayüz).
 
 local myPerms = {}
-AeigsGranted = AeigsGranted or { noclip = false, god = false }
 
 local PERM_HELP = {
   kick = '/ac kick [id] [sebep]',
   ban = '/ac ban [id] [sebep]',
   warn = '/ac warn [id] [sebep]',
   spectate = '/ac spectate [id]',
-  noclip = '/ac noclip',
   revive = '/ac revive [id]',
   tp = '/ac tp [id]',
   bring = '/ac bring [id]',
   freeze = '/ac freeze [id] on|off',
-  godmode = '/ac god',
   announce = '/ac announce [mesaj]',
   screenshot = '/ac ss [id]',
 }
@@ -68,10 +65,6 @@ RegisterCommand(Config.AdminCommand or 'ac', function(_, args)
     TriggerServerEvent('aeigs:adminAction', 'spectate', id)
   elseif cmd == 'freeze' and has('freeze') then
     TriggerServerEvent('aeigs:adminAction', 'freeze', id, args[3] or 'on')
-  elseif cmd == 'noclip' and has('noclip') then
-    TriggerServerEvent('aeigs:adminAction', 'noclip')
-  elseif cmd == 'god' and has('godmode') then
-    TriggerServerEvent('aeigs:adminAction', 'godmode')
   elseif cmd == 'announce' and has('announce') then
     TriggerServerEvent('aeigs:adminAction', 'announce', nil, table.concat(args, ' ', 2))
   elseif cmd == 'ss' and has('screenshot') then
@@ -112,59 +105,10 @@ RegisterNetEvent('aeigs:teleport', function(x, y, z)
 end)
 
 RegisterNetEvent('aeigs:spectate', function(targetId, x, y, z)
+  AeigsTpGrace = GetGameTimer() + 6000
   local ped = PlayerPedId()
   SetEntityCoords(ped, x + 0.0, y + 0.0, z + 30.0, false, false, false, false)
   NetworkSetInSpectatorMode(true, GetPlayerPed(GetPlayerFromServerId(tonumber(targetId))))
   notify('~b~İzleme modu açık — kapatmak için: /ac spectate 0')
   if tonumber(targetId) == 0 then NetworkSetInSpectatorMode(false, ped) end
-end)
-
-RegisterNetEvent('aeigs:toggleGod', function()
-  AeigsGranted.god = not AeigsGranted.god
-  SetPlayerInvincible(PlayerId(), AeigsGranted.god)
-  notify(AeigsGranted.god and '~g~Godmode açık' or '~y~Godmode kapalı')
-end)
-
--- NoClip (yönetici) — tespit bastırılır
-RegisterNetEvent('aeigs:toggleNoclip', function()
-  AeigsGranted.noclip = not AeigsGranted.noclip
-  notify(AeigsGranted.noclip and '~g~NoClip açık (WASD + Shift/Ctrl)' or '~y~NoClip kapalı')
-end)
-
-CreateThread(function()
-  local speed = 1.0
-  while true do
-    Wait(0)
-    if AeigsGranted.noclip then
-      local ped = PlayerPedId()
-      SetEntityInvincible(ped, true)
-      SetEntityCollision(ped, false, false)
-      FreezeEntityPosition(ped, true)
-      local c = GetEntityCoords(ped)
-      local dx, dy, dz = 0.0, 0.0, 0.0
-      local head = GetGameplayCamRelativeHeading() + GetEntityHeading(ped)
-      local pitch = GetGameplayCamRelativePitch()
-      if IsControlPressed(0, 21) then speed = 3.0 else speed = 1.0 end
-      if IsControlPressed(0, 32) then -- W
-        dx = -math.sin(math.rad(head)) * speed
-        dy = math.cos(math.rad(head)) * speed
-        dz = math.sin(math.rad(pitch)) * speed
-      elseif IsControlPressed(0, 33) then -- S
-        dx = math.sin(math.rad(head)) * speed
-        dy = -math.cos(math.rad(head)) * speed
-        dz = -math.sin(math.rad(pitch)) * speed
-      end
-      if IsControlPressed(0, 34) then dx = dx + math.cos(math.rad(head)) * speed end -- A
-      if IsControlPressed(0, 35) then dx = dx - math.cos(math.rad(head)) * speed end -- D
-      if IsControlPressed(0, 44) then dz = dz + speed end -- Q up
-      if IsControlPressed(0, 46) then dz = dz - speed end -- E down
-      SetEntityCoordsNoOffset(ped, c.x + dx, c.y + dy, c.z + dz, true, true, true)
-    else
-      local ped = PlayerPedId()
-      if not AeigsGranted.god then SetEntityInvincible(ped, false) end
-      SetEntityCollision(ped, true, true)
-      FreezeEntityPosition(ped, false)
-      Wait(500)
-    end
-  end
 end)

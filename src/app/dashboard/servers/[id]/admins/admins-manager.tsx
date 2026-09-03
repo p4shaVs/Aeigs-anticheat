@@ -20,12 +20,10 @@ const PERMS: { key: string; label: string }[] = [
   { key: "ban", label: "Ban" },
   { key: "warn", label: "Uyar" },
   { key: "spectate", label: "İzle" },
-  { key: "noclip", label: "NoClip" },
   { key: "revive", label: "Canlandır" },
   { key: "tp", label: "Işınlan" },
   { key: "bring", label: "Getir" },
   { key: "freeze", label: "Dondur" },
-  { key: "godmode", label: "Godmode" },
   { key: "announce", label: "Duyuru" },
   { key: "screenshot", label: "Ekran" },
 ];

@@ -1,7 +1,7 @@
 import { getOwnedServer } from "@/lib/guards";
 import { db } from "@/lib/db";
 import { PageHeader } from "@/components/ui";
-import { BlacklistManager, type BlacklistRow } from "./blacklist-manager";
+import { ModelSearch, type BlacklistState } from "./model-search";
 
 export const dynamic = "force-dynamic";
 
@@ -10,25 +10,26 @@ export default async function BlacklistPage({ params }: { params: { id: string }
   const rows = await db.blacklist.findMany({
     where: { serverId: server.id },
     orderBy: { createdAt: "desc" },
-    take: 1000,
+    take: 5000,
   });
 
-  const list: BlacklistRow[] = rows.map((r) => ({
-    id: r.id,
-    kind: r.kind,
-    model: r.model,
-    label: r.label,
-    action: r.action,
-    enabled: r.enabled,
-  }));
+  // model adı (lowercase) -> mevcut kara liste durumu
+  const state: Record<string, BlacklistState> = {};
+  for (const r of rows) {
+    state[r.model.toLowerCase()] = { id: r.id, action: r.action, enabled: r.enabled, kind: r.kind };
+  }
 
   return (
     <>
       <PageHeader
-        title="Kara Liste"
-        description="Yasaklı araç, ped, nesne ve silahlar. Oyuncu spawn etmeye çalıştığında oyun içinde otomatik engellenir."
+        title="Model Arama"
+        description="Araç, yaya, silah, nesne ve patlama listelerini arayın ve yönetin."
       />
-      <BlacklistManager serverId={server.id} rows={list} />
+      <ModelSearch
+        serverId={server.id}
+        state={state}
+        imgBase={process.env.NEXT_PUBLIC_MODEL_IMG_BASE ?? ""}
+      />
     </>
   );
 }

@@ -1,19 +1,30 @@
 -- Aeigs Anti-Cheat — client tespit + canlı veri modülü
--- NOT: Client tespiti spoofable'dır; asıl koruma sunucu tarafındadır.
--- Buradaki kontroller bariyeri yükseltir, panele rapor eder ve canlı
--- konum/can/kalkan verisini gönderir (interaktif harita + izleme).
+-- Client tespiti bariyeri yükseltir, panele rapor eder ve canlı konum/can/kalkan
+-- verisini gönderir. Kritik tespitler (noclip, teleport, super jump, godmode)
+-- lisansta auto_ban açıksa ve oyuncu bypass'lı değilse otomatik ban ile sonuçlanır.
 
 local lastReport = {}
-
--- Yönetici menüsü noclip/godmode verdiğinde tespit bastırılır (yanlış pozitif).
-AeigsGranted = AeigsGranted or { noclip = false, god = false }
+local WeaponBlacklist = {}          -- [weaponHash] = 'REMOVE'|'KICK'|'BAN'
+AeigsTpGrace = 0                    -- yetkili ışınlama sonrası teleport tespiti muafiyeti (ms)
+local spawnGuardUntil = 0           -- bağlanma/spawn sonrası kısa muafiyet (invincibility vb.)
 
 local function report(dtype, severity, details)
   local now = GetGameTimer()
-  if lastReport[dtype] and now - lastReport[dtype] < 30000 then return end
+  if lastReport[dtype] and now - lastReport[dtype] < 20000 then return end
   lastReport[dtype] = now
   TriggerServerEvent('aeigs:report', dtype, severity, details or {})
 end
+
+-- İlk spawn / resource başlangıcında kısa muafiyet (yanlış pozitif önler)
+AddEventHandler('onClientResourceStart', function(res)
+  if GetCurrentResourceName() ~= res then return end
+  spawnGuardUntil = GetGameTimer() + 30000
+  AeigsTpGrace = GetGameTimer() + 30000
+end)
+AddEventHandler('playerSpawned', function()
+  spawnGuardUntil = GetGameTimer() + 15000
+  AeigsTpGrace = GetGameTimer() + 15000
+end)
 
 -- ---------------------------------------------------------------------------
 -- Aktivite tespiti (harita etiketi için)
@@ -40,7 +51,7 @@ CreateThread(function()
     TriggerServerEvent('aeigs:pos', {
       x = c.x, y = c.y, z = c.z,
       heading = GetEntityHeading(ped),
-      health = GetEntityHealth(ped),   -- 100..200 (sunucu 100 çıkarır)
+      health = GetEntityHealth(ped),
       armor = GetPedArmour(ped),
       activity = currentActivity(ped),
     })
@@ -48,59 +59,122 @@ CreateThread(function()
 end)
 
 -- ---------------------------------------------------------------------------
--- Temel tespitler: godmode / anormal can / no-clip
+-- Kritik tespitler: godmode / no-clip / super jump / teleport
 -- ---------------------------------------------------------------------------
 local noclipTicks = 0
+local godTicks = 0
+local lastPos = nil
 
 CreateThread(function()
   while true do
-    Wait(1000)
+    Wait(500)
     local ped = PlayerPedId()
     local pid = PlayerId()
+    local now = GetGameTimer()
+    local guard = now < spawnGuardUntil
+    local coords = GetEntityCoords(ped)
+    local inVeh = IsPedInAnyVehicle(ped, false)
 
-    -- Godmode / invincibility (menüyle verilmediyse)
-    if not AeigsGranted.god then
+    -- ---- GODMODE / INVINCIBILITY (sürekli kontrol → yanlış pozitif yok) ----
+    if not guard and not IsPedDeadOrDying(ped, true) then
       if GetPlayerInvincible(pid) then
+        godTicks = godTicks + 1
+      else
+        godTicks = 0
+      end
+      -- ~4 sn (8 tick) kesintisiz invincible ise gerçek godmode kabul et
+      if godTicks >= 8 then
+        godTicks = 0
         report('INVINCIBILITY', 'CRITICAL', { source = 'client' })
       end
-      local health = GetEntityHealth(ped)
-      if health > 200 then
-        report('INVINCIBILITY', 'HIGH', { health = health })
-      end
+    else
+      godTicks = 0
     end
 
-    -- No-clip tespiti: yetkiyle açılmadıysa; havada, çarpışmasız/çok yüksekte
-    -- hareket ediyor ve düşme/paraşüt/araç/yüzme durumunda değilse.
-    if not AeigsGranted.noclip then
+    -- ---- NO-CLIP ----
+    if not guard then
       local inValidAirState =
-        IsPedInAnyVehicle(ped, false) or IsPedFalling(ped) or IsPedSwimming(ped)
-        or GetPedParachuteState(ped) > 0 or IsPedRagdoll(ped) or IsPedJumping(ped)
-        or IsPedClimbing(ped)
+        inVeh or IsPedFalling(ped) or IsPedSwimming(ped)
+        or GetPedParachuteState(ped) > 0 or IsPedRagdoll(ped)
+        or IsPedJumping(ped) or IsPedClimbing(ped)
       local collisionOff = GetEntityCollisionDisabled(ped)
       local heightAbove = GetEntityHeightAboveGround(ped)
       local moving = GetEntitySpeed(ped) > 2.0
-
-      if collisionOff and moving and not IsPedInAnyVehicle(ped, false) then
+      if collisionOff and moving and not inVeh then
         noclipTicks = noclipTicks + 2
       elseif (not inValidAirState) and heightAbove > 3.0 and moving then
         noclipTicks = noclipTicks + 1
       else
         noclipTicks = 0
       end
-
-      if noclipTicks >= 3 then
+      if noclipTicks >= 4 then
         noclipTicks = 0
         report('NOCLIP', 'CRITICAL', { source = 'client' })
       end
-    else
-      noclipTicks = 0
+    end
+
+    -- ---- SUPER JUMP ----
+    if not guard and not inVeh and IsPedJumping(ped) then
+      local vz = GetEntityVelocity(ped)
+      -- normal zıplama ~4.5; hile ile 7.5+ dikey hız
+      local zv = vz.z or 0.0
+      if zv > 7.5 then
+        report('SUPER_JUMP', 'CRITICAL', { zVelocity = zv })
+      end
+    end
+
+    -- ---- TELEPORT ---- (yetkili ışınlama muafiyeti + spawn muafiyeti)
+    if lastPos and not inVeh and now > AeigsTpGrace and not guard then
+      local dist = #(coords - lastPos)
+      -- 0.5 sn'de 120m'den fazla yer değişimi (yaya) = teleport
+      if dist > 120.0 and not IsPedFalling(ped) then
+        report('TELEPORT', 'CRITICAL', { distance = dist })
+      end
+    end
+    lastPos = coords
+  end
+end)
+
+-- ---------------------------------------------------------------------------
+-- Kara listedeki SİLAH — envanterde belirir belirmez (ateş etmeden) yakalanır
+-- ---------------------------------------------------------------------------
+RegisterNetEvent('aeigs:weaponBlacklist', function(list)
+  local map = {}
+  for _, w in ipairs(list or {}) do map[w.hash] = w.action end
+  WeaponBlacklist = map
+end)
+
+CreateThread(function()
+  Wait(2000)
+  TriggerServerEvent('aeigs:requestWeaponBlacklist')
+  while true do
+    Wait(1000)
+    local ped = PlayerPedId()
+    for hash, action in pairs(WeaponBlacklist) do
+      if HasPedGotWeapon(ped, hash, false) then
+        if action == 'REMOVE' then
+          RemoveWeaponFromPed(ped, hash)
+          report('BLACKLIST_WEAPON', 'MEDIUM', { hash = hash, action = 'REMOVE' })
+        else
+          -- KICK / BAN: sunucu doğrular ve uygular (silah kullanılmadan)
+          TriggerServerEvent('aeigs:weaponHit', hash)
+        end
+      end
     end
   end
 end)
 
 -- ---------------------------------------------------------------------------
+-- Yetkili ışınlama alıcısı (teleport tespitini muaf tutar)
+-- ---------------------------------------------------------------------------
+RegisterNetEvent('aeigs:teleport', function(x, y, z)
+  AeigsTpGrace = GetGameTimer() + 6000
+  local ped = PlayerPedId()
+  SetEntityCoords(ped, x + 0.0, y + 0.0, z + 1.0, false, false, false, false)
+end)
+
+-- ---------------------------------------------------------------------------
 -- İzleme / Ekran görüntüsü (screenshot-basic gerekir)
--- Sunucu: TriggerClientEvent('aeigs:screenshot', src, uploadUrl, reqId, adminId)
 -- ---------------------------------------------------------------------------
 RegisterNetEvent('aeigs:screenshot', function(uploadUrl, reqId, adminId)
   if GetResourceState('screenshot-basic') ~= 'started' then
@@ -108,7 +182,6 @@ RegisterNetEvent('aeigs:screenshot', function(uploadUrl, reqId, adminId)
     return
   end
   exports['screenshot-basic']:requestScreenshotUpload(uploadUrl, Config.ScreenshotField or 'files[]', function(data)
-    -- data: yükleyiciden dönen JSON; çoğu yükleyici { files = { url } } döndürür.
     local url = nil
     local okDec, parsed = pcall(json.decode, data)
     if okDec and parsed then

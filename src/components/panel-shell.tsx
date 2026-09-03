@@ -59,7 +59,7 @@ function serverNav(id: string): NavSection[] {
         { href: `${b}/console`, label: "Konsol", icon: "terminal" },
         { href: `${b}/events`, label: "Olaylar", icon: "activity" },
         { href: `${b}/resources`, label: "Kaynaklar", icon: "cube" },
-        { href: `${b}/blacklist`, label: "Kara Liste", icon: "lock" },
+        { href: `${b}/blacklist`, label: "Model / Kara Liste", icon: "lock" },
         { href: `${b}/admins`, label: "Yöneticiler", icon: "user" },
         { href: `${b}/logs`, label: "Günlük", icon: "logs" },
       ],

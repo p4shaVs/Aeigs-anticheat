@@ -9,14 +9,14 @@ import { clientIp } from "@/lib/session";
 
 // Oyun içi menüde bir yöneticinin kullanabileceği izinler.
 const ADMIN_PERMISSIONS = [
-  "kick", "ban", "warn", "spectate", "noclip", "revive", "tp", "bring",
-  "freeze", "godmode", "announce", "screenshot",
+  "kick", "ban", "warn", "spectate", "revive", "tp", "bring",
+  "freeze", "announce", "screenshot",
 ] as const;
 
 // Rol → varsayılan izinler (özel izin verilmezse kullanılır).
 const ROLE_DEFAULTS: Record<string, string[]> = {
   OWNER: [...ADMIN_PERMISSIONS],
-  ADMIN: ["kick", "ban", "warn", "spectate", "noclip", "revive", "tp", "bring", "freeze", "screenshot"],
+  ADMIN: ["kick", "ban", "warn", "spectate", "revive", "tp", "bring", "freeze", "screenshot"],
   MODERATOR: ["warn", "spectate", "revive", "tp", "screenshot"],
 };
 

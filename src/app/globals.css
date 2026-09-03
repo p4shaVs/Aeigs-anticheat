@@ -103,3 +103,32 @@ h1, h2, h3, h4 {
   border: 1px solid rgba(255, 255, 255, 0.08) !important;
   border-radius: 12px !important;
 }
+
+/* İnteraktif harita — aralık (range) kaydırıcıları */
+.ac-range {
+  -webkit-appearance: none;
+  appearance: none;
+  height: 4px;
+  border-radius: 9999px;
+  background: linear-gradient(to right, rgba(16, 185, 129, 0.6), rgba(16, 185, 129, 0.25));
+  outline: none;
+}
+.ac-range::-webkit-slider-thumb {
+  -webkit-appearance: none;
+  appearance: none;
+  width: 14px;
+  height: 14px;
+  border-radius: 9999px;
+  background: #10b981;
+  border: 2px solid #0a1119;
+  cursor: pointer;
+  box-shadow: 0 0 6px rgba(16, 185, 129, 0.6);
+}
+.ac-range::-moz-range-thumb {
+  width: 14px;
+  height: 14px;
+  border-radius: 9999px;
+  background: #10b981;
+  border: 2px solid #0a1119;
+  cursor: pointer;
+}

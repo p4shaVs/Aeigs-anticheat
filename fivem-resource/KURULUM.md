@@ -88,10 +88,12 @@ izinleri seç. Oyunda `/ac` yazınca izinli komutlar listelenir:
 ```
 /ac kick [id] [sebep]     /ac ban [id] [sebep]      /ac warn [id] [sebep]
 /ac tp [id]   /ac bring [id]   /ac spectate [id]     /ac revive [id]
-/ac freeze [id] on|off    /ac noclip   /ac god   /ac announce [mesaj]   /ac ss [id]
+/ac freeze [id] on|off    /ac announce [mesaj]       /ac ss [id]
 ```
 İzin **her aksiyonda sunucuda** doğrulanır (client sadece arayüz). Oyun içi
-ban/kick/uyarı panele ve Discord'a da işlenir.
+ban/kick/uyarı panele ve Discord'a da işlenir. **NoClip/Godmode menüde yoktur** —
+bunlar hile sayılır ve yetkili bile açsa banlanır (bkz. aşağı). Yetkili birinin
+gerçekten muaf olması gerekiyorsa **Bypass** listesine eklenir.
 
 ### 🔔 Discord webhook logları
 **Ayarlar**'da webhook URL'ini gir ve hangi olayların gönderileceğini seç

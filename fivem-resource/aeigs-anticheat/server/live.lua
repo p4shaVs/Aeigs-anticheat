@@ -34,20 +34,38 @@ end
 -- Kara liste (blacklist) — client'lara iletilir, orada uygulanır
 -- ---------------------------------------------------------------------------
 local BlacklistByHash = {}  -- modelHash -> { kind, model, action }
+local WeaponList = {}       -- client'a gönderilecek yasaklı silahlar { hash, action }
 local function refreshBlacklist()
   Aeigs.request('/blacklist', 'GET', nil, function(ok, data)
     if ok and data and data.blacklist then
       Blacklist = data.blacklist
-      local byHash = {}
+      local byHash, weapons = {}, {}
       for _, b in ipairs(Blacklist) do
         -- model bir isim ("adder") ya da sayısal hash olabilir
         local h = tonumber(b.model) or GetHashKey(b.model)
         byHash[h] = b
+        if b.kind == 'weapon' then weapons[#weapons + 1] = { hash = h, action = b.action } end
       end
       BlacklistByHash = byHash
+      WeaponList = weapons
+      TriggerClientEvent('aeigs:weaponBlacklist', -1, WeaponList)
     end
   end)
 end
+
+-- Yeni bağlanan client yasaklı silah listesini ister
+RegisterNetEvent('aeigs:requestWeaponBlacklist', function()
+  TriggerClientEvent('aeigs:weaponBlacklist', source, WeaponList)
+end)
+
+-- Client, envanterinde yasaklı silah tespit etti (ateş etmeden, KICK/BAN için)
+RegisterNetEvent('aeigs:weaponHit', function(hash)
+  local src = source
+  local entry = BlacklistByHash[hash]
+  if entry and entry.kind == 'weapon' then
+    Aeigs.enforceBlacklist(src, entry, hash)
+  end
+end)
 
 --- Bir entity model hash'i kara listedeyse kaydını döndürür.
 function Aeigs.blacklistLookup(modelHash)
@@ -74,8 +92,12 @@ function Aeigs.enforceBlacklist(owner, entry, model)
     Aeigs.request('/ingame-action', 'POST', {
       type = 'BAN', reason = ('Kara liste: %s (%s)'):format(entry.model, entry.kind),
       by = 'AntiCheat', license = ids.license, playerName = pname,
-    }, function() if Aeigs.refreshBans then Aeigs.refreshBans() end end)
-    DropPlayer(owner, ('[Aeigs] Yasaklandınız | Yasaklı %s: %s'):format(entry.kind, entry.model))
+    }, function(ok, data)
+      if Aeigs.refreshBans then Aeigs.refreshBans() end
+      local code = (ok and data and data.banCode) or '—'
+      DropPlayer(owner, ('[Aeigs] Yasaklandınız | Yasaklı %s: %s | Ban Kodu: %s')
+        :format(entry.kind, entry.model, code))
+    end)
   end
 end
 
@@ -173,8 +195,11 @@ RegisterNetEvent('aeigs:adminAction', function(action, targetId, arg)
     Aeigs.request('/ingame-action', 'POST', {
       type = 'BAN', reason = arg or 'Yönetici', by = adminName,
       license = tids.license, playerName = nameOf(target),
-    }, function() if Aeigs.refreshBans then Aeigs.refreshBans() end end)
-    DropPlayer(target, ('[Aeigs] Yasaklandınız | %s'):format(arg or 'Yönetici'))
+    }, function(ok, data)
+      if Aeigs.refreshBans then Aeigs.refreshBans() end
+      local code = (ok and data and data.banCode) or '—'
+      DropPlayer(target, ('[Aeigs] Yasaklandınız | %s | Ban Kodu: %s'):format(arg or 'Yönetici', code))
+    end)
   elseif action == 'warn' and target then
     Aeigs.request('/ingame-action', 'POST', {
       type = 'WARN', reason = arg or 'Yönetici', by = adminName,
@@ -198,10 +223,6 @@ RegisterNetEvent('aeigs:adminAction', function(action, targetId, arg)
     local ped = GetPlayerPed(target)
     local c = GetEntityCoords(ped)
     TriggerClientEvent('aeigs:spectate', src, targetId, c.x, c.y, c.z)
-  elseif action == 'noclip' then
-    TriggerClientEvent('aeigs:toggleNoclip', src)
-  elseif action == 'godmode' then
-    TriggerClientEvent('aeigs:toggleGod', src)
   elseif action == 'announce' then
     TriggerClientEvent('aeigs:notify', -1, '~b~[Duyuru] ~w~' .. tostring(arg or ''))
   elseif action == 'screenshot' and target then

@@ -5,7 +5,7 @@ import { handler, ok, ApiError } from "@/lib/api";
 import { requireOwnedServer } from "@/lib/api-guards";
 
 const createSchema = z.object({
-  kind: z.enum(["vehicle", "ped", "object", "weapon"]),
+  kind: z.enum(["vehicle", "ped", "object", "weapon", "explosion"]),
   model: z.string().min(1).max(80),
   label: z.string().max(80).optional(),
   action: z.enum(["REMOVE", "KICK", "BAN"]).default("REMOVE"),
