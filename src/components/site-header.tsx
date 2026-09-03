@@ -4,8 +4,9 @@ import { getCurrentUser } from "@/lib/session";
 
 const NAV = [
   { href: "/#features", label: "Özellikler" },
-  { href: "/#detection", label: "Koruma" },
+  { href: "/#demo", label: "Demo" },
   { href: "/pricing", label: "Fiyatlandırma" },
+  { href: "/#faq", label: "SSS" },
   { href: "/docs", label: "Dokümantasyon" },
 ];
 
