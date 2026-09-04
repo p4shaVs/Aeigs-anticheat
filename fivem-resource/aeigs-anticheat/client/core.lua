@@ -42,7 +42,29 @@ function Aeigs.spectateGrace() return GetGameTimer() < Aeigs.grace.spectate end
 
 exports('markTeleport', function() Aeigs.markTp() end)  -- legit tp yapan scriptler çağırır
 exports('markRevive', function() Aeigs.markRevive() end)
-AddEventHandler('playerSpawned', function() Aeigs.grace.spawn = GetGameTimer() + 12000; Aeigs.markTp() end)
+
+-- Oyuncu GERÇEKTEN dünyada mı? Menü/yükleme/karakter seçimi sırasında HİÇBİR
+-- tespit çalışmaz (giriş sırasında invincible olmak vb. false ban yapmasın).
+Aeigs.spawned = false
+AddEventHandler('playerSpawned', function()
+  Aeigs.spawned = true
+  Aeigs.grace.spawn = GetGameTimer() + 12000
+  Aeigs.markTp()
+end)
+CreateThread(function()
+  while not Aeigs.spawned do
+    Wait(1000)
+    if NetworkIsSessionStarted() then
+      local ped = PlayerPedId()
+      if ped and ped ~= 0 and DoesEntityExist(ped) and not IsEntityDead(ped) and GetEntityHealth(ped) > 0 then
+        Aeigs.spawned = true
+        Aeigs.grace.spawn = GetGameTimer() + 12000  -- ilk spawn sonrası 12 sn daha muaf
+      end
+    end
+  end
+end)
+--- Tespitler yalnızca oyuncu gerçekten oyundayken ve spawn muafiyeti bittikten sonra çalışır.
+function Aeigs.active() return Aeigs.spawned and not Aeigs.spawnGuard() end
 RegisterNetEvent('aeigs:grantTp', function() Aeigs.markTp() end)  -- sunucu admin tp
 RegisterNetEvent('aeigs:grantRevive', function() Aeigs.markRevive() end)
 

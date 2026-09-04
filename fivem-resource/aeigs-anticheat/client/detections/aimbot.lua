@@ -8,7 +8,7 @@ CreateThread(function()
   local lastH, lastP, lastT
   while true do
     local S = Aeigs.S
-    if Aeigs.rule('anti_aimbot', true) and not Aeigs.spawnGuard()
+    if Aeigs.rule('anti_aimbot', true) and Aeigs.active()
       and S.ped and IsPlayerFreeAiming(S.id) then
       local rot = GetGameplayCamRot(2)
       local now = GetGameTimer()

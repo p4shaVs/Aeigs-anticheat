@@ -6,7 +6,7 @@ CreateThread(function()
   while true do
     Wait(1000)
     local S = Aeigs.S
-    if not S.ped or Aeigs.spawnGuard() then goto cont end
+    if not S.ped or not Aeigs.active() then goto cont end
 
     -- Yetkisiz spectate (yönetici izni muaf)
     if Aeigs.rule('anti_spectate', true) and NetworkIsInSpectatorMode() and not Aeigs.spectateGrace() then

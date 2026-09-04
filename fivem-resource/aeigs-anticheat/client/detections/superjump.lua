@@ -6,7 +6,7 @@ local strike = Aeigs.strike(2, 6000)
 CreateThread(function()
   while true do
     Wait(500)
-    if Aeigs.rule('anti_superjump', true) and not Aeigs.spawnGuard() then
+    if Aeigs.rule('anti_superjump', true) and Aeigs.active() then
       local S = Aeigs.S
       if S.ped and not S.inVeh and not S.ragdoll then
         local beast = IsPedDoingBeastJump(S.ped)

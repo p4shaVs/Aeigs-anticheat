@@ -6,7 +6,7 @@ local footStrike = Aeigs.strike(5, 5000)
 CreateThread(function()
   while true do
     Wait(400)
-    if Aeigs.rule('anti_speedhack', true) and not Aeigs.spawnGuard() and not Aeigs.tpGrace() then
+    if Aeigs.rule('anti_speedhack', true) and Aeigs.active() and not Aeigs.tpGrace() then
       local S = Aeigs.S
       if S.ped and not S.inVeh and not S.falling and not S.ragdoll
         and S.parachute <= 0 and not S.swimming and not S.climbing

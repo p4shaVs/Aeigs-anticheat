@@ -1,41 +1,37 @@
--- godmode.lua — Godmode / invincibility (kesin ban, false'suz)
--- Teknikler:
---  • İmkânsız değerler (health>200, maxHealth>200, armor>100) → anında
---  • GetPlayerInvincible / GetEntityProofs (bullet/melee proof) / config-flag(6)
---    → muaf durumlar (ölü/donmuş/ragdoll/spawn/revive/araç) DIŞINDA, 2 strike/10 sn
--- tx menüsünden godmode açılınca invincible flag'i sürekli true → yakalanır.
-
-local strikeInv = Aeigs.strike(2, 10000)
+-- godmode.lua — Godmode / invincibility (SADECE RAPOR — client'ta oto-ban YOK)
+-- ÖNEMLİ: Godmode client tespiti false-pozitife çok açık. Oyuncu spawn/yükleme,
+-- revive, araç, cutscene, paraşüt, NoClip vb. sırasında motor tarafından geçici
+-- invincible yapılır. Bu yüzden burada ASLA CRITICAL/ban atmıyoruz — yalnızca
+-- SÜREKLI (uzun süre kesintisiz) invincible durumunu HIGH olarak RAPOR ederiz.
+-- Gerçek/imkânsız godmode kararı ve ban sunucuda verilir (armor>100 → live.lua).
+-- Böylece "sunucuya girmeden godmode ban" ve "noclip'te godmode" false'ları biter.
 
 local function exempt()
   local S = Aeigs.S
-  return S.dead or S.frozen or S.ragdoll or Aeigs.spawnGuard() or Aeigs.reviveGrace()
-    or IsPlayerCamControlDisabled(S.id) or S.parachute > 0 or S.cutscene
+  return S.dead or S.frozen or S.ragdoll or S.inVeh or S.cutscene
+    or S.parachute > 0 or S.collisionOff              -- NoClip invincible yapar → godmode sayma
+    or Aeigs.spawnGuard() or Aeigs.reviveGrace() or Aeigs.tpGrace()
+    or IsPlayerCamControlDisabled(S.id)
 end
 
 CreateThread(function()
+  local sustained = 0
   while true do
-    Wait(1500)
-    if Aeigs.rule('anti_invincibility', true) then
+    Wait(2000)
+    if Aeigs.rule('anti_invincibility', true) and Aeigs.active() and not exempt() then
       local S = Aeigs.S
-      if S.ped then
-        -- İmkânsız değerler → anında (armor sunucuda da kontrol ediliyor)
-        if S.health > 200 or S.maxHealth > 200 then
-          Aeigs.report('GODMODE', 'CRITICAL', { health = S.health, max = S.maxHealth })
-        elseif S.armor > 100 then
-          Aeigs.report('GODMODE', 'CRITICAL', { armor = S.armor })
-        elseif not exempt() then
-          local hit = false
-          if S.invincible then hit = true end
-          -- Mermi/bıçak geçirmezlik (proof) — combat sırasında hasar almama
-          local _, bulletProof, _, _, _, meleeProof = GetEntityProofs(S.ped)
-          if bulletProof or meleeProof then hit = true end
-          if GetPedConfigFlag(S.ped, 6, true) then hit = true end  -- bullet-proof vest flag
-          if hit and strikeInv:hit() then
-            Aeigs.report('GODMODE', 'CRITICAL', { source = 'invincible' })
-          end
+      if S.ped and S.invincible then
+        sustained = sustained + 1
+        -- ~20 sn (10 örnek) kesintisiz invincible ve muaf değil → sadece RAPOR
+        if sustained >= 10 then
+          sustained = 0
+          Aeigs.report('GODMODE', 'HIGH', { source = 'invincible', sustained = true })
         end
+      else
+        sustained = 0
       end
+    else
+      sustained = 0
     end
   end
 end)
