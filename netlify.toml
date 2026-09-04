@@ -1,0 +1,14 @@
+# Netlify — Aeigs Anti-Cheat (Next.js 14 App Router)
+# Next.js runtime'ı (API route'lar, SSR, key sistemi) otomatik plugin ile çalışır.
+
+[build]
+  command = "npm run build"
+  publish = ".next"
+
+[build.environment]
+  # Prisma'nın Netlify'ın Linux ortamı için doğru binary'yi üretmesini sağlar.
+  PRISMA_CLI_BINARY_TARGETS = "native,rhel-openssl-3.0.x"
+  NODE_VERSION = "20"
+
+[[plugins]]
+  package = "@netlify/plugin-nextjs"

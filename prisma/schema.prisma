@@ -3,11 +3,14 @@
 // string olarak modellendiği için taşıma sorunsuzdur.
 
 generator client {
-  provider = "prisma-client-js"
+  provider      = "prisma-client-js"
+  // Netlify/Vercel (Linux) için gerekli binary. Lokalde de "native" çalışır.
+  binaryTargets = ["native", "rhel-openssl-3.0.x"]
 }
 
 datasource db {
-  provider = "sqlite"
+  // Prod: PostgreSQL (Neon/Supabase). Lokal geliştirme de artık Postgres kullanır.
+  provider = "postgresql"
   url      = env("DATABASE_URL")
 }
 
