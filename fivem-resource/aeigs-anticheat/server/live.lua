@@ -314,9 +314,13 @@ local function teleportScan()
           local dist = #(c - vector3(prev.x, prev.y, prev.z))
           local settled = (now - prev.seen) > 20000        -- girişten 20 sn sonra
           local granted = tpGrace[src] and now < tpGrace[src]
-          if settled and not granted and dt > 0 and dist > 150.0 and (dist / dt) > TP_MAX_SPEED
+          -- Yaya: >60 m/s imkânsız; araç/uçak: >250 m/s imkânsız. Böylece kısa
+          -- mesafeli ışınlama da yakalanır, hızlı araç/uçak yolculuğu FALSE vermez.
+          local inVeh = GetVehiclePedIsIn(ped, false) ~= 0
+          local perSec = dt > 0 and (dist / dt) or 0
+          local limit = inVeh and 250.0 or 60.0
+          if settled and not granted and dist > 40.0 and perSec > limit
               and not (Aeigs.isWhitelisted and Aeigs.isWhitelisted(src)) then
-            -- Kesin teleport → sunucu raporu (banned ise oyuncu düşürülür)
             TriggerEvent('aeigs:serverReport', src, 'TELEPORT', 'CRITICAL', { distance = math.floor(dist) })
             sPos[src].seen = now + 5000  -- kısa süre tekrar tetiklenmesin
           end

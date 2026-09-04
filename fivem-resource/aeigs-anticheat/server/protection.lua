@@ -92,11 +92,55 @@ AddEventHandler('entityCreating', function(handle)
 end)
 
 -- ---------------------------------------------------------------------------
+-- SILENT AIM / MAGIC BULLET — client gerçek nişan yönünü bildirir; burada
+-- vurulan oyuncu ile nişan yönü arasındaki açı ölçülür. Yere bakıp kafadan
+-- vuruyorsa açı ~90°+ → kesin silent aim. (2 doğrulama.)
+-- ---------------------------------------------------------------------------
+local aimData = {}
+RegisterNetEvent('aeigs:aim', function(px, py, pz, fx, fy, fz)
+  aimData[source] = {
+    pos = vector3(px + 0.0, py + 0.0, pz + 0.0),
+    fwd = vector3(fx + 0.0, fy + 0.0, fz + 0.0),
+    t = GetGameTimer(),
+  }
+end)
+AddEventHandler('playerDropped', function() aimData[source] = nil end)
+
+local silentStrike = {}
+
+-- ---------------------------------------------------------------------------
 -- Silah hasarı — imkânsız hasar (temel örnek)
 -- ---------------------------------------------------------------------------
 AddEventHandler('weaponDamageEvent', function(sender, data)
   local src = tonumber(sender)
   if not src then return end
+
+  -- Silent aim: vurulan oyuncu(lar) ile nişan yönü arasındaki açı
+  if ruleOn('anti_silent_aim') and data and (data.hitGlobalIds or data.hitGlobalId)
+      and not (Aeigs.isWhitelisted and Aeigs.isWhitelisted(src)) then
+    local aim = aimData[src]
+    if aim and (GetGameTimer() - aim.t) < 800 then
+      local ids = data.hitGlobalIds or { data.hitGlobalId }
+      for _, nid in ipairs(ids) do
+        local ent = NetworkGetEntityFromNetworkId(nid)
+        if ent and ent ~= 0 and GetEntityType(ent) == 1 and IsPedAPlayer(ent) then
+          local dir = GetEntityCoords(ent) - aim.pos
+          local dist = #dir
+          if dist > 5.0 then
+            dir = dir / dist
+            local dot = aim.fwd.x * dir.x + aim.fwd.y * dir.y + aim.fwd.z * dir.z
+            if dot < 0.5 then  -- >60° sapma: nişan almadığın oyuncuyu vurdun
+              silentStrike[src] = (silentStrike[src] or 0) + 1
+              if silentStrike[src] >= 2 then
+                silentStrike[src] = 0
+                TriggerEvent('aeigs:serverReport', src, 'SILENT_AIM', 'CRITICAL', { angleCos = math.floor(dot * 100) / 100 })
+              end
+            end
+          end
+        end
+      end
+    end
+  end
 
   -- Kara listedeki silah kullanımı
   if data and data.weaponType then

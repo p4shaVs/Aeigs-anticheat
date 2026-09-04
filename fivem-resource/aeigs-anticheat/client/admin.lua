@@ -99,14 +99,15 @@ RegisterNetEvent('aeigs:freeze', function(state)
 end)
 
 RegisterNetEvent('aeigs:teleport', function(x, y, z)
+  if Aeigs and Aeigs.markTp then Aeigs.markTp() end  -- yetkili ışınlama → tespit muaf
   local ped = PlayerPedId()
   SetEntityCoords(ped, x + 0.0, y + 0.0, z + 1.0, false, false, false, false)
   notify('~b~Işınlandınız.')
 end)
 
 RegisterNetEvent('aeigs:spectate', function(targetId, x, y, z)
-  AeigsTpGrace = GetGameTimer() + 6000
-  AeigsGranted.spectate = tonumber(targetId) ~= 0  -- yetkili spectate → tespit muaf
+  if Aeigs and Aeigs.markTp then Aeigs.markTp() end
+  if Aeigs and Aeigs.markSpectate then Aeigs.markSpectate(tonumber(targetId) ~= 0) end  -- yetkili spectate muaf
   local ped = PlayerPedId()
   SetEntityCoords(ped, x + 0.0, y + 0.0, z + 30.0, false, false, false, false)
   NetworkSetInSpectatorMode(true, GetPlayerPed(GetPlayerFromServerId(tonumber(targetId))))

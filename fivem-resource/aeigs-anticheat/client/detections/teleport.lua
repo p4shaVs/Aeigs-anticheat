@@ -1,0 +1,5 @@
+-- teleport.lua — Teleport tespiti SUNUCU tarafındadır (server/live.lua)
+-- Sunucu, oyuncunun koordinatını doğrudan okur (kandırılamaz): yayada 1 sn'de
+-- >60m, araçta >250m = fiziksel olarak imkânsız → kesin teleport. Yetkili ışınlama
+-- (admin tp / spawn) muaftır. Client'ta ölçüm yapılmaz (noclip ile karışmasın).
+-- Bu dosya yalnızca yapı bütünlüğü + ileride client-yardımı için ayrılmıştır.

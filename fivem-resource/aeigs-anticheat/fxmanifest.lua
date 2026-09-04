@@ -15,11 +15,19 @@ server_scripts {
   'server/protection.lua',
 }
 
--- Client tarafı: temel tespitler + canlı veri + yönetici menüsü + izleme kancaları
+-- Client tarafı: çekirdek + her hile ayrı dosya (detections/) + canlı veri + menü
 client_scripts {
   'config.lua',
-  'client/main.lua',
-  'client/weapons.lua',
-  'client/behavior.lua',
-  'client/admin.lua',
+  'client/core.lua',              -- paylaşılan durum + yardımcılar (İLK)
+  'client/detections/noclip.lua',
+  'client/detections/teleport.lua',
+  'client/detections/godmode.lua',
+  'client/detections/superjump.lua',
+  'client/detections/speedhack.lua',
+  'client/detections/aimbot.lua',
+  'client/detections/silentaim.lua',
+  'client/detections/weapons.lua',
+  'client/detections/extras.lua',
+  'client/main.lua',              -- konum/ekran görüntüsü (tespit değil)
+  'client/admin.lua',             -- oyun içi yönetici menüsü
 }
