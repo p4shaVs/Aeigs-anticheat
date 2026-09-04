@@ -53,6 +53,10 @@ CreateThread(function()
           dead = S.dead, invincible = S.invincible,
           health = S.health, armor = S.armor,
           beast = IsPedDoingBeastJump(ped),
+          -- godmode ipuçları: proof bayrakları + zırh config-flag
+          proofBullet = select(2, GetEntityProofs(ped)) or false,
+          proofMelee = select(6, GetEntityProofs(ped)) or false,
+          cfg6 = GetPedConfigFlag(ped, 6, true) or false,
           -- silah / nişan
           shooting = IsPedShooting(ped),
           aiming = aiming and aimEnt ~= 0 and IsEntityAPed(aimEnt) and IsPedAPlayer(aimEnt) or false,

@@ -62,5 +62,10 @@ Config.GodmodeMinDamage     = 150    -- pencerede toplam en az bu kadar amaçlan
 Config.GodmodeHpTolerance   = 8      -- can bu kadar bile düşmediyse "hiç düşmedi" say
 Config.GodmodeStrikes       = 2      -- kaç pencere üst üste = ban
 
+-- Aktif godmode testi (godmode açılınca ~5 sn'de yakalar). Oyuncuya minik
+-- test hasarı verip anında geri yükler; SADECE tam canda/güvenli durumda.
+-- İstemezseniz false yapın (o zaman sadece pasif hasar-emilimi çalışır).
+Config.GodmodeActiveProbe   = true
+
 -- İzinli kaynaklar dışından spawn olan entity'leri işaretle (protection.lua)
 Config.Debug = false

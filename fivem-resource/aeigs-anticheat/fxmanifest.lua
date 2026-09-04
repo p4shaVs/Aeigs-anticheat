@@ -24,6 +24,7 @@ client_scripts {
   'client/detections/noclip.lua',
   'client/detections/teleport.lua',
   'client/detections/godmode.lua',
+  'client/detections/godmode_probe.lua', -- godmode'u açıldığı an yakalar (aktif test)
   'client/detections/superjump.lua',
   'client/detections/speedhack.lua',
   'client/detections/aimbot.lua',
