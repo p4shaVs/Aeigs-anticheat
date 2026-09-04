@@ -4,11 +4,10 @@
 
 local RES = GetCurrentResourceName()
 
--- Kayıt yetkisi: admin olan veya 'ban' iznine sahip oyuncular
+-- Kayıt yetkisi: şimdilik HERKES kayıt yapabilir (test amaçlı).
+-- Kısıtlamak istersen burada admin/izin kontrolü ekleyebilirsin.
 local function canRecord(src)
-  if Aeigs.adminOf and Aeigs.adminOf(src) then return true end
-  if Aeigs.hasPerm and Aeigs.hasPerm(src, 'ban') then return true end
-  return false
+  return true
 end
 
 RegisterNetEvent('aeigs:rec:auth', function()
