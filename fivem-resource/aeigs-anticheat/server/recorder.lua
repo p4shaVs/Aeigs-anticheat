@@ -1,6 +1,6 @@
 -- recorder.lua (sunucu) — hile test kayıtlarını dosyaya yazar
--- Client'tan gelen kayıt tamponunu resources/aeigs-anticheat/recordings/ altına
--- JSON olarak kaydeder. Yalnızca yetkili (admin) oyuncular kayıt başlatabilir.
+-- Client'tan gelen kayıt tamponunu resources/aeigs-anticheat/ KÖK klasörüne
+-- aeigs_rec_<oyuncu>_<zaman>.json olarak yazar. Sunucu konsoluna tam yol basar.
 
 local RES = GetCurrentResourceName()
 
@@ -31,7 +31,9 @@ RegisterNetEvent('aeigs:rec:dump', function(frames)
 
   local pname = sanitize(GetPlayerName(src) or ('p' .. src))
   local ts = os.date('%Y%m%d_%H%M%S')
-  local fname = ('recordings/rec_%s_%s.json'):format(pname, ts)
+  -- Alt klasör YOK — doğrudan resource kök#üne yaz (SaveResourceFile bazı
+  -- sürümlerde alt klasör oluşturmuyor, o yüzden dosya "kaybolmuş" gibi olur).
+  local fname = ('aeigs_rec_%s_%s.json'):format(pname, ts)
 
   local payload = {
     player = GetPlayerName(src),
@@ -42,12 +44,20 @@ RegisterNetEvent('aeigs:rec:dump', function(frames)
   }
 
   local ok, encoded = pcall(json.encode, payload)
-  if not ok then
+  if not ok or not encoded then
     Aeigs.log('ERROR', 'recorder', 'JSON encode hatası')
+    TriggerClientEvent('aeigs:notify', src, '~r~Kayıt yazılamadı (encode).')
     return
   end
 
-  SaveResourceFile(RES, fname, encoded, -1)
-  Aeigs.log('INFO', 'recorder', ('Kayıt yazıldı: %s (%d kare)'):format(fname, #frames))
-  TriggerClientEvent('aeigs:notify', src, ('~g~Kayıt dosyaya yazıldı: %s'):format(fname))
+  local saved = SaveResourceFile(RES, fname, encoded, #encoded)
+  local path = ('resources/%s/%s'):format(RES, fname)
+  if saved then
+    print(('^2[aeigs] KAYIT YAZILDI → %s (%d kare, %d bayt)^7'):format(path, #frames, #encoded))
+    Aeigs.log('INFO', 'recorder', ('Kayıt: %s (%d kare)'):format(fname, #frames))
+    TriggerClientEvent('aeigs:notify', src, ('~g~Kayıt yazıldı: %s (%d kare)'):format(fname, #frames))
+  else
+    print(('^1[aeigs] KAYIT YAZILAMADI → %s (SaveResourceFile false)^7'):format(path))
+    TriggerClientEvent('aeigs:notify', src, '~r~Kayıt yazılamadı (dosya).')
+  end
 end)
