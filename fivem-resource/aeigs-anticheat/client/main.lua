@@ -83,18 +83,25 @@ CreateThread(function()
     local guard = now < spawnGuardUntil
     local inVeh = IsPedInAnyVehicle(ped, false)
 
-    -- ---- NO-CLIP (GÜVENİLİR): çarpışma kapalı + hareket + araçta değil ----
+    -- ---- NO-CLIP (GÜVENİLİR): çarpışma kapalı + KONTROLLÜ hareket ----
+    -- Yüksekten düşerken oyun çarpışmayı bir an "kapalı" okuyabilir; bu yüzden
+    -- yerçekimiyle DÜŞÜŞ (aşağı hız) varsa ASLA noclip sayılmaz. NoClip = kontrollü
+    -- hareket (düşmüyor, ragdoll değil, araçta değil) + çarpışma kapalı, süregelen.
     if not guard then
+      local vel = GetEntityVelocity(ped)
+      local dropping = (vel.z or 0.0) < -3.0        -- yerçekimi düşüşü
+      local falling = IsPedFalling(ped) or dropping
       local collisionOff = GetEntityCollisionDisabled(ped)
       local moving = GetEntitySpeed(ped) > 1.5
-      if collisionOff and moving and not inVeh
-        and not IsPedFalling(ped) and not IsPedRagdoll(ped) then
+      if collisionOff and moving and not inVeh and not falling
+        and not IsPedRagdoll(ped) and not IsPedInParachuteFreeFall(ped)
+        and GetPedParachuteState(ped) <= 0 then
         noclipTicks = noclipTicks + 1
       else
         noclipTicks = 0
       end
-      -- ~1.5 sn kesintisiz çarpışmasız hareket = noclip (kesin)
-      if noclipTicks >= 3 then
+      -- ~2 sn (4 tick) kesintisiz kontrollü çarpışmasız hareket = noclip (kesin)
+      if noclipTicks >= 4 then
         noclipTicks = 0
         report('NOCLIP', 'CRITICAL', { source = 'client' })
       end
