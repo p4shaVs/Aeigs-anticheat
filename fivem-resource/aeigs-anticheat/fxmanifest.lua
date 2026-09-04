@@ -13,6 +13,7 @@ server_scripts {
   'server/main.lua',
   'server/live.lua',
   'server/protection.lua',
+  'server/recorder.lua',
 }
 
 -- Client tarafı: çekirdek + her hile ayrı dosya (detections/) + canlı veri + menü
@@ -28,6 +29,7 @@ client_scripts {
   'client/detections/silentaim.lua',
   'client/detections/weapons.lua',
   'client/detections/extras.lua',
+  'client/detections/recorder.lua', -- hile test/debug kaydedici (yetkili)
   'client/main.lua',              -- konum/ekran görüntüsü (tespit değil)
   'client/admin.lua',             -- oyun içi yönetici menüsü
 }
