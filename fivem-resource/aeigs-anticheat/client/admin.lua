@@ -106,6 +106,7 @@ end)
 
 RegisterNetEvent('aeigs:spectate', function(targetId, x, y, z)
   AeigsTpGrace = GetGameTimer() + 6000
+  AeigsGranted.spectate = tonumber(targetId) ~= 0  -- yetkili spectate → tespit muaf
   local ped = PlayerPedId()
   SetEntityCoords(ped, x + 0.0, y + 0.0, z + 30.0, false, false, false, false)
   NetworkSetInSpectatorMode(true, GetPlayerPed(GetPlayerFromServerId(tonumber(targetId))))

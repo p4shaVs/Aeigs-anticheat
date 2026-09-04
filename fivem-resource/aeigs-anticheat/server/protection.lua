@@ -125,6 +125,22 @@ AddEventHandler('weaponDamageEvent', function(sender, data)
 end)
 
 -- ---------------------------------------------------------------------------
+-- giveWeaponEvent — kara listedeki silah bu event'le verilmeye çalışılırsa engelle
+-- ---------------------------------------------------------------------------
+AddEventHandler('giveWeaponEvent', function(sender, data)
+  local src = tonumber(sender)
+  if not src then return end
+  local hash = data and (data.weaponType or data.weaponHash)
+  if hash and Aeigs.blacklistLookup then
+    local entry = Aeigs.blacklistLookup(hash)
+    if entry and entry.kind == 'weapon' then
+      CancelEvent()
+      Aeigs.enforceBlacklist(src, entry, hash)
+    end
+  end
+end)
+
+-- ---------------------------------------------------------------------------
 -- Ortak rapor köprüsü (sunucu tespiti → API)
 -- ---------------------------------------------------------------------------
 AddEventHandler('aeigs:serverReport', function(src, dtype, severity, details)
