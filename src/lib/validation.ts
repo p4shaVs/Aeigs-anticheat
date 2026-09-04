@@ -30,6 +30,14 @@ export const createServerSchema = z.object({
   licenseKeyId: z.string().min(1, "Lisans anahtarı gerekli"),
 });
 
+// FeloxAC tarzı tek-adım: key + ip + port + ad ile aktifleştir & oluştur.
+export const activateServerSchema = z.object({
+  key: z.string().trim().toUpperCase(),
+  name: z.string().trim().min(2).max(48),
+  ip: z.string().trim().max(64).optional(),
+  port: z.number().int().min(1).max(65535).default(30120),
+});
+
 export const redeemSchema = z.object({
   key: z.string().trim().toUpperCase(),
 });

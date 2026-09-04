@@ -18,28 +18,61 @@ npm run dev            # http://localhost:3000
 ```
 Giriş: `admin@aeigs.gg / Admin1234` (admin) veya `demo@aeigs.gg / Demo1234`.
 
-## 2) Panelde sunucu oluştur ve token al
-1. Panelde **Sunucularım → (lisans etkinleştir) → Sunucu Oluştur**.
-2. Sunucuya gir → **Ayarlar** sekmesi → **Token Yenile** ile bir token oluştur.
-   (Token yalnızca bir kez gösterilir, kopyala.)
-3. **API Adresi**'ni de not al: `http://localhost:3000/api/v1`
+## 2) Panelde sunucu oluştur (tek adım)
+Panelde **Sunucularım → Sunucu Ekle**. Açılan formda:
+- **Lisans Anahtarı** (AEIGS-XXXX-XXXX-XXXX-XXXX)
+- **Public Sunucu IP** (opsiyonel, gösterim için) ve **Port** (genelde 30120)
+- **Sunucu Adı**
 
-> FiveM sunucun **aynı makinede** ise `localhost` çalışır. Başka makinede ise
-> `localhost` yerine web'in çalıştığı makinenin LAN IP'sini yaz
-> (örn. `http://192.168.1.50:3000/api/v1`).
+**Aktifleştir & Sunucu Oluştur**'a bas. Ardından ekranda **server.cfg bloğu**
+(token dolu) çıkar — tek tıkla kopyala.
 
-## 3) Resource'u sunucuna ekle
+## 3) Resource'u sunucuna ekle + server.cfg
 `fivem-resource/aeigs-anticheat` klasörünü FiveM sunucunun `resources/`
-klasörüne kopyala. Sonra `server.cfg` dosyasına ekle:
+klasörüne kopyala (izleme için `screenshot-basic` de). Panelin verdiği bloğu
+`server.cfg`'ye yapıştır:
 ```cfg
-set aeigs_api   "http://localhost:3000/api/v1"
+## ─── Aeigs Anti-Cheat ───
+set aeigs_api   "http://PANEL_ADRESI/api/v1"
 set aeigs_token "aeigs_srv_BURAYA_TOKEN"
-# İzleme (canlı ekran) için opsiyonel — screenshot-basic + bir yükleme hedefi:
-set aeigs_ss_upload ""     # örn. "https://your-uploader/upload"
+add_ace resource.aeigs-anticheat command allow   # konsol/kick/kaynak komutları için
+ensure screenshot-basic
 ensure aeigs-anticheat
 ```
-Sunucuyu başlat. Konsolda `[aeigs] Anti-Cheat başlatıldı` görürsün. Panelde
-sunucu **Çevrimiçi** olur.
+> `ensure` satırları diğer resource'ların **üstünde** olsun. Sunucuyu başlat;
+> konsolda `[aeigs] Anti-Cheat başlatıldı` görürsün, panelde sunucu **Çevrimiçi** olur.
+
+---
+
+## 🌐 Panel yerelde (kendi PC'nde), FiveM sunucusu VDS'te — bağlama
+FiveM sunucun **başka bir makinede (VDS)** ve paneli **kendi bilgisayarında**
+`localhost:3000`'de açtın. VDS'teki resource `localhost`'a ulaşamaz — paneli
+internetten erişilebilir yapman gerekir. En kolayı **tünel** (ücretsiz):
+
+**Cloudflare Tunnel (hesap gerekmez):**
+1. `cloudflared`'i indir (Windows: `cloudflared.exe`).
+2. Panel açıkken PC'nde çalıştır:
+   ```
+   cloudflared tunnel --url http://localhost:3000
+   ```
+3. Verilen adresi kullan: `https://xxxx.trycloudflare.com`
+4. `.env` dosyanda **APP_URL**'i bu adrese eşitle (ekran görüntüsü linkleri düzgün olsun):
+   ```
+   APP_URL="https://xxxx.trycloudflare.com"
+   ```
+   ve paneli yeniden başlat.
+5. `server.cfg`'de `aeigs_api`'yi tünele çevir:
+   ```
+   set aeigs_api "https://xxxx.trycloudflare.com/api/v1"
+   ```
+
+> Alternatif: modem/router'da **3000 portunu** PC'ne yönlendirip ev **public IP**'ni
+> kullanabilirsin (`http://EV_IP:3000/api/v1`) — ama IP değişebilir ve NAT sorun
+> çıkarabilir; **tünel önerilir**.
+>
+> Not: `trycloudflare.com` adresi her çalıştırmada değişir. Sabit adres için
+> ücretsiz bir Cloudflare hesabıyla adlandırılmış tünel kurabilir ya da paneli
+> doğrudan VDS'te çalıştırabilirsin.
 
 ---
 

@@ -140,6 +140,7 @@ model Server {
   // FiveM kaynağının kimlik doğrulaması için (hash'lenmiş saklanır).
   apiTokenHash  String?  @unique
   ip            String?
+  port          Int      @default(30120)
   discordGuild  String?
 
   status        String   @default("OFFLINE") // ONLINE | OFFLINE

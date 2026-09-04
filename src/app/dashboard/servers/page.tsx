@@ -26,7 +26,7 @@ export default async function ServersPage() {
         title="Sunucularım"
         description="Koruma altındaki FiveM sunucuların."
         actions={
-          <LinkButton href="/dashboard/licenses" icon="plus" variant="secondary">
+          <LinkButton href="/dashboard/servers/new" icon="plus" variant="secondary">
             Sunucu Ekle
           </LinkButton>
         }
@@ -36,10 +36,10 @@ export default async function ServersPage() {
         <EmptyState
           icon="server"
           title="Henüz sunucu eklenmedi"
-          description="Lisanslarım bölümünden bir anahtarı etkinleştirerek sunucu oluştur."
+          description="Lisans anahtarını girerek tek adımda sunucunu oluştur ve kurulumu tamamla."
           action={
-            <LinkButton href="/dashboard/licenses" icon="key">
-              Lisanslarıma Git
+            <LinkButton href="/dashboard/servers/new" icon="plus">
+              Sunucu Oluştur
             </LinkButton>
           }
         />
