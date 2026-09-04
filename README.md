@@ -1,90 +1,363 @@
 # Aeigs Anti-Cheat
 
-FiveM sunucuları için yeni nesil anti-cheat SaaS platformu. Bu depo **web tarafını**
-içerir: pazarlama sitesi, kullanıcı hesapları, satın alım/lisans sistemi, müşteri ve
-admin panelleri, key generator ve FiveM kaynağının çağıracağı REST API.
+FiveM için **SaaS anti-cheat** platformu: web panel (Next.js) + lisans/key sistemi +
+FiveM Lua resource (client tespitleri + sunucu korumaları). Panelden kurallar açılır,
+key üretilir, sunucular yönetilir; oyun içinde hileler tespit edilip otomatik banlanır.
 
-> FiveM Lua kaynağı (in-game) ayrı bir entegrasyon adımında eklenecektir. API tarafı
-> (`/api/v1/*`) şimdiden hazırdır.
+> **Kısa yol:** Yayınlama için [`NETLIFY-DEPLOY.md`](./NETLIFY-DEPLOY.md).
+> FiveM resource kurulumu için [FiveM Resource](#7-fivem-resource-kurulumu) bölümü.
 
-## Teknoloji
+---
 
-- **Next.js 14** (App Router) + **TypeScript**
-- **TailwindCSS** — koyu, modern panel tasarımı
-- **Prisma** + **SQLite** (prod'da `postgresql`'e geçilebilir)
-- **JWT (httpOnly cookie)** + **bcrypt** — güvenli oturum, hash'li şifreler
-- **Zod** doğrulama, in-memory **rate limiting**, RBAC (USER/ADMIN), denetim kaydı
+## İçindekiler
+1. [Mimari genel bakış](#1-mimari-genel-bakış)
+2. [Teknoloji yığını](#2-teknoloji-yığını)
+3. [Proje yapısı](#3-proje-yapısı)
+4. [Hızlı başlangıç (lokal)](#4-hızlı-başlangıç-lokal)
+5. [Ortam değişkenleri](#5-ortam-değişkenleri)
+6. [Veritabanı & seed](#6-veritabanı--seed)
+7. [FiveM resource kurulumu](#7-fivem-resource-kurulumu)
+8. [Key / lisans sistemi](#8-key--lisans-sistemi)
+9. [Roller ve sayfalar](#9-roller-ve-sayfalar)
+10. [Tespit sistemi (anti-cheat)](#10-tespit-sistemi-anti-cheat)
+11. [Hile test/kayıt modu](#11-hile-testkayıt-modu)
+12. [REST API (v1) referansı](#12-rest-api-v1-referansı)
+13. [Güvenlik notları](#13-güvenlik-notları)
+14. [Yayınlama (Netlify)](#14-yayınlama-netlify)
+15. [Sık sorunlar](#15-sık-sorunlar)
 
-## Kurulum
+---
 
-```bash
-npm install
-cp .env.example .env          # AUTH_SECRET ve LICENSE_HMAC_SECRET değerlerini değiştirin
-npm run db:push               # şemayı veritabanına uygula
-npm run db:seed               # demo veri + kullanıcılar (opsiyonel)
-npm run dev                   # http://localhost:3000
+## 1) Mimari genel bakış
+
+```
+┌──────────────────┐        HTTPS (Bearer aeigs_srv_…)      ┌─────────────────────┐
+│  FiveM Sunucusu  │  ─────────────────────────────────►    │   Web Panel (Next)  │
+│  aeigs-anticheat │   heartbeat / players / detections      │   /api/v1/*  (REST) │
+│  (Lua resource)  │  ◄─────────────────────────────────    │                     │
+│                  │   pending actions / commands / rules    │   Prisma ← Postgres │
+└──────────────────┘                                         └─────────────────────┘
+        ▲                                                              ▲
+        │ oyun içi tespitler (client/detections/*.lua)                │ panel (owner/admin)
+        │ sunucu korumaları (server/*.lua)                            │ dashboard + admin
 ```
 
-### Demo hesaplar (seed sonrası)
+- **Client Lua** her hileyi ayrı dosyada tespit eder → sunucuya raporlar.
+- **Server Lua** olay-tabanlı korumalar (silah/patlama/silent aim/godmode) + panele köprü.
+- **Web panel** kuralları/keyleri/banları yönetir; `/api/v1` üzerinden resource ile konuşur.
+- **DB (Postgres)** kullanıcı, lisans, sunucu, oyuncu, ban, tespit, log, denetim kayıtlarını tutar.
 
-| Rol     | E-posta          | Şifre      |
-|---------|------------------|------------|
-| Admin   | admin@aeigs.gg   | Admin1234  |
-| Müşteri | demo@aeigs.gg    | Demo1234   |
+---
 
-> Not: İlk kaydolan kullanıcı otomatik olarak **ADMIN** olur (kurulum kolaylığı).
+## 2) Teknoloji yığını
 
-## Özellikler
+| Katman | Teknoloji |
+|--------|-----------|
+| Web framework | Next.js 14 (App Router) |
+| Dil | TypeScript, React 18 |
+| DB / ORM | PostgreSQL + Prisma 5 |
+| Kimlik doğrulama | Kendi JWT'si (`jose`) + `bcryptjs` (parola) |
+| Doğrulama | `zod` |
+| Grafik/3D | `recharts`, `three` (3D harita) |
+| Stil | Tailwind CSS |
+| Oyun tarafı | FiveM Lua (client + server) |
+
+---
+
+## 3) Proje yapısı
+
+```
+Aeigs-anticheat/
+├─ prisma/
+│  ├─ schema.prisma          # 18 model (User, Server, LicenseKey, Ban, Detection, …)
+│  └─ seed.ts                # admin + demo kullanıcı + örnek veri
+├─ src/
+│  ├─ app/
+│  │  ├─ (auth)/             # login / register
+│  │  ├─ dashboard/          # müşteri paneli (sunucular, banlar, harita, kurallar…)
+│  │  ├─ admin/              # admin paneli (keyler, ürünler, kullanıcılar, denetim)
+│  │  ├─ api/
+│  │  │  ├─ v1/…             # FiveM-facing REST API (Bearer token)
+│  │  │  └─ …                # panel API'leri (oturum tabanlı)
+│  │  ├─ pricing/ ban/ docs/ # public sayfalar
+│  │  └─ page.tsx            # landing
+│  └─ lib/                   # db, jwt, session, keys, features, rules, bypass, …
+├─ fivem-resource/aeigs-anticheat/
+│  ├─ fxmanifest.lua
+│  ├─ config.lua
+│  ├─ client/
+│  │  ├─ core.lua            # paylaşılan durum + yardımcılar (İLK yüklenir)
+│  │  ├─ detections/*.lua    # her hile ayrı dosya
+│  │  ├─ main.lua            # konum/ekran görüntüsü
+│  │  └─ admin.lua           # oyun içi /ac menüsü
+│  └─ server/
+│     ├─ http.lua main.lua live.lua protection.lua
+│     ├─ damage_sentinel.lua # godmode/health hack (hasar-emilimi)
+│     └─ recorder.lua        # hile test kaydı
+├─ netlify.toml
+├─ NETLIFY-DEPLOY.md
+└─ README.md
+```
+
+---
+
+## 4) Hızlı başlangıç (lokal)
+
+> Not: Proje artık **PostgreSQL** kullanıyor (SQLite kaldırıldı). Lokalde de bir
+> Postgres bağlantısı gerekir — ücretsiz **Neon** en pratik yol.
+
+```bash
+# 1. Bağımlılıklar
+npm install
+
+# 2. Ortam dosyası
+cp .env.example .env
+#   .env içine DATABASE_URL (Neon), AUTH_SECRET, LICENSE_HMAC_SECRET, APP_URL gir.
+
+# 3. Tabloları oluştur + örnek veri
+npm run db:push
+npm run db:seed
+
+# 4. Geliştirme sunucusu
+npm run dev        # http://localhost:3000
+```
+
+Seed sonrası giriş bilgileri:
+- **Admin:** `admin@aeigs.gg` / `Admin1234`
+- **Müşteri (demo):** `demo@aeigs.gg` / `Demo1234`
+
+> ⚠️ Prod'da bu hesapların parolalarını değiştir veya seed'i çalıştırma.
+
+### npm script'leri
+| Script | Ne yapar |
+|--------|----------|
+| `npm run dev` | Geliştirme sunucusu |
+| `npm run build` | `prisma generate && next build` |
+| `npm start` | Prod sunucusu (build sonrası) |
+| `npm run db:push` | Şemayı DB'ye uygular |
+| `npm run db:seed` | Örnek veriyi ekler |
+| `npm run db:studio` | Prisma Studio (DB görüntüleyici) |
+| `npm run lint` | ESLint |
+
+---
+
+## 5) Ortam değişkenleri
+
+`src/lib/env.ts` açılışta bunları **zod** ile doğrular; eksik/zayıfsa uygulama başlamaz.
+
+| Değişken | Zorunlu | Kural | Açıklama |
+|----------|:------:|-------|----------|
+| `DATABASE_URL` | ✅ | min 1 | PostgreSQL bağlantı stringi (Neon pooled önerilir) |
+| `AUTH_SECRET` | ✅ | **≥32 karakter** | Oturum JWT imzalama anahtarı. `openssl rand -base64 48` |
+| `LICENSE_HMAC_SECRET` | ✅ | **≥16 karakter** | Lisans/API token imzalama tuzu. Kurulumdan sonra DEĞİŞTİRME |
+| `APP_URL` | ⛔ (varsayılan localhost) | URL | Uygulama temel URL'i |
+| `NODE_ENV` | otomatik | enum | development/production/test |
+
+> `AUTH_SECRET` değişirse tüm oturumlar düşer. `LICENSE_HMAC_SECRET` değişirse
+> tüm sunucu API token'ları geçersiz olur (yeniden token üretmek gerekir).
+
+---
+
+## 6) Veritabanı & seed
+
+Prisma şeması **18 model** içerir:
+
+`User`, `Session`, `Product`, `Order`, `LicenseKey`, `Server`, `Whitelist`,
+`Blacklist`, `ScreenshotRequest`, `ServerCommand`, `ServerAdmin`, `Player`,
+`Ban`, `ServerResource`, `Detection`, `PunishAction`, `ServerLog`, `AuditLog`.
+
+Öne çıkanlar:
+- **LicenseKey** — `AEIGS-XXXX-XXXX-XXXX-XXXX` formatı, durum (ACTIVE/REVOKED/SUSPENDED),
+  süre, ürün ilişkisi.
+- **Server** — sahibi, `apiTokenHash` (ham token saklanmaz), kurallar (JSON), heartbeat.
+- **Player** — lisans başına kimlik, `trustScore` (tespitlerle düşer).
+- **Ban** — ban kodu, sebep, kim/ne zaman, kalıcı/süreli.
+- **Detection** — tip, severity, detay (JSON), oyuncu.
+
+Şema değişince: `npm run db:push` (dev) veya migration akışın.
+
+---
+
+## 7) FiveM resource kurulumu
+
+1. `fivem-resource/aeigs-anticheat` klasörünü sunucunun `resources/` dizinine kopyala.
+2. `server.cfg`'ye ekle (panelden **Ayarlar**'dan al):
+   ```cfg
+   set aeigs_api   "https://SITEN.netlify.app/api/v1"
+   set aeigs_token "aeigs_srv_xxxxxxxxxxxxxxxx"
+   ensure aeigs-anticheat
+   ```
+3. (Opsiyonel) Ekran görüntüsü için `screenshot-basic` resource'unu kur ve
+   `config.lua`'daki `Config.ScreenshotUploadUrl`'i ayarla.
+
+### Yükleme sırası (fxmanifest)
+`config → client/core.lua → detections/*.lua → main.lua → admin.lua`
+(server tarafı: `http → main → live → protection → damage_sentinel → recorder`).
+**`core.lua` ilk yüklenmeli** — tüm tespitler onun paylaşılan durumunu kullanır.
+
+### `config.lua` başlıca ayarlar
+| Ayar | Varsayılan | Açıklama |
+|------|-----------|----------|
+| `aeigs_api` / `aeigs_token` | convar | Panel API adresi ve sunucu token'ı |
+| `MaxWeaponDamage` | 400 | Tek atış hasar tavanı (damage multiplier) |
+| `GodmodeActiveProbe` | true | Godmode'u açılınca yakalayan aktif test |
+| `GodmodeMinHits/MinDamage/Strikes` | 5/150/2 | Pasif godmode (hasar-emilimi) eşikleri |
+| `HeartbeatInterval` vb. | saniye | Panel senkron aralıkları |
+
+---
+
+## 8) Key / lisans sistemi
+
+Akış:
+
+1. **Admin panel → Keyler** — key üretilir: `AEIGS-XXXX-XXXX-XXXX-XXXX`
+   (kriptografik rastgele; `0/O`, `1/I` gibi karışan karakterler yok).
+2. **Müşteri → Kod Kullan (Redeem)** — key'i hesabına tanımlar; bir **Server** oluşur.
+3. **Sunucu API token'ı** üretilir: `aeigs_srv_…`. Ham token **yalnızca bir kez**
+   gösterilir; DB'de sadece **HMAC hash** saklanır (sızarsa token kullanılamaz).
+4. FiveM resource bu token ile `Authorization: Bearer aeigs_srv_…` başlığıyla
+   `/api/v1`'e bağlanır.
+5. Her istekte lisans doğrulanır: **REVOKED/SUSPENDED** → 403, **süresi dolmuş** → 403.
+
+İlgili kod: `src/lib/keys.ts` (üretim/hash), `src/lib/server-auth.ts` (token doğrulama).
+
+---
+
+## 9) Roller ve sayfalar
 
 ### Public
-- Modern landing (hero, özellikler, koruma vitrini, panel önizleme)
-- Fiyatlandırma + tek tıkla lisans oluşturan satın alma akışı (manuel/demo ödeme)
-- Dokümantasyon + API referansı
+`/` landing · `/pricing` fiyatlar/satın alma · `/ban` ban kodu sorgulama · `/docs` dokümanlar
 
-### Müşteri Paneli (`/dashboard`)
-- Genel bakış (canlı grafik, tespit donut'u, son aktivite)
-- Sunucular: oluşturma, oyuncular, **web'den ban/kick/uyarı**, ban yönetimi, günlükler, yapılandırma
-- Lisanslarım, Kod Kullan (redeem), İndir, Hesap ayarları (şifre değiştir)
+### Müşteri paneli (`/dashboard`)
+Sunucular listesi · yeni sunucu · **Kod Kullan** · sunucu başına:
+genel bakış, oyuncular, banlar, kick/uyarı, **kurallar (toggle)**, whitelist (bypass),
+blacklist (araç/silah/model), **3D harita**, izleme, konsol, loglar, olaylar,
+**sorgulama (lookup)**, analytics, kaynaklar (start/stop/restart), ayarlar (token).
 
-### Admin Paneli (`/admin`)
-- Platform istatistikleri, kullanıcılar, sunucular, denetim kaydı
-- **Key Generator**: özellik seçerek toplu lisans üretimi, ürüne/kullanıcıya atama, süre/limit
-- Ürün yönetimi (paketler, fiyat, özellikler)
+### Admin paneli (`/admin`)
+Genel bakış · **key üretici** · ürünler · kullanıcılar · sunucular · **denetim (audit) log**.
 
-## FiveM API (`/api/v1`)
+Yetkilendirme: panel API'leri **oturum tabanlı** (`requireUser` / `requireOwnedServer`),
+FiveM API'leri **Bearer token** tabanlı.
 
-Tüm istekler `Authorization: Bearer <sunucu-token>` başlığı gerektirir. Token, sunucu
-oluşturulurken üretilir; DB'de yalnızca HMAC hash'i saklanır.
+---
 
-| Method | Uç | Açıklama |
-|--------|-----|----------|
-| POST | `/api/v1/heartbeat` | Sunucuyu çevrimiçi tutar, config döner |
-| POST | `/api/v1/players/sync` | Aktif oyuncu listesini senkronize eder |
-| POST | `/api/v1/detections` | Tespit raporlar (kritik + auto_ban → otomatik ban) |
-| GET  | `/api/v1/actions/pending` | Panelden verilen bekleyen cezaları çeker |
-| POST | `/api/v1/actions/ack` | Uygulanan cezaları onaylar |
-| GET  | `/api/v1/bans` | Aktif ban listesini çeker (giriş kontrolü) |
+## 10) Tespit sistemi (anti-cheat)
 
-## Güvenlik notları
+### Client tespitleri (her hile ayrı dosya — `client/detections/`)
+| Dosya | Yakaladığı | Yöntem |
+|-------|-----------|--------|
+| `noclip.lua` | NoClip | Çarpışma kapalı + hareket, ~2 sn |
+| `godmode.lua` | Godmode (rapor) | Sürekli invincible → HIGH rapor (ban yok) |
+| `godmode_probe.lua` | Godmode (aktif) | Minik test hasarı, can düşmezse → ban |
+| `superjump.lua` | Super Jump | Beast-jump native + dikey hız |
+| `speedhack.lua` | Speed hack | Yaya >18 m/s, araç >130 m/s |
+| `aimbot.lua` | Aimbot | Ani "snap" + düşman oyuncuya kilit |
+| `silentaim.lua` | Silent aim / magic bullet | Kamera yönünü sunucuya bildirir |
+| `weapons.lua` | Infinite ammo / no reload / kara liste silah | Mermi sabitliği + envanter |
+| `extras.lua` | Freecam/spectate/stamina/model/invisible | Rapor-only |
 
-- Şifreler bcrypt (12 round) ile hash'lenir; hatalı girişte kademeli kilit.
-- Oturumlar DB'de saklanır ve iptal edilebilir (jti); şifre değişince diğer cihazlar düşer.
-- Sunucu API token'ları yalnızca bir kez gösterilir, DB'de HMAC-SHA256 hash'i tutulur.
-- Tüm girişler Zod ile doğrulanır; hassas uçlarda rate limit ve denetim kaydı vardır.
-- Güvenlik başlıkları (`next.config.mjs`) ve rol tabanlı middleware koruması.
+Ortak altyapı (`core.lua`): 200ms durum önbelleği, `Aeigs.rule()` (panel kuralı),
+`Aeigs.report()` (throttle'lı rapor), `Aeigs.strike()` (N vuruş/pencere),
+`Aeigs.active()` (spawn öncesi tespit çalışmaz), legit-muafiyet (spawn/tp/revive).
 
-## Prod'a geçiş
+### Server korumaları (`server/`)
+- `protection.lua` — weaponDamageEvent (silent aim açı, illegal weapon, damage
+  multiplier), explosionEvent (patlayıcı mermi), entityCreating (kara liste),
+  giveWeaponEvent.
+- `live.lua` — teleport taraması (koordinat sıçraması), armor>100, konum/whitelist/
+  blacklist/admin senkron.
+- `damage_sentinel.lua` — **genel godmode/health-hack**: oyuncu vuruldu ama canı
+  düşmediyse (flag/değere bakmadan) → ban.
 
-1. `prisma/schema.prisma` içinde `provider = "postgresql"` yapıp `DATABASE_URL` verin.
-2. Güçlü `AUTH_SECRET` ve `LICENSE_HMAC_SECRET` üretin (`openssl rand -base64 48`).
-3. Gerçek ödeme entegrasyonu (Stripe/PayPal) `/api/checkout` üzerine eklenebilir.
+### Ban akışı
+Client/Server tespit → `TriggerServerEvent('aeigs:report'/'aeigs:serverReport')` →
+`POST /api/v1/detections`. Severity **CRITICAL** + lisansta auto-ban açık + oyuncu
+whitelist değilse → `Ban` + `PunishAction` oluşur, oyuncu düşürülür (ban kodu ile).
+Her tespit oyuncunun **trustScore**'unu düşürür (CRITICAL −60, HIGH −30, diğer −10).
 
-## Komutlar
+---
 
-```bash
-npm run dev        # geliştirme
-npm run build      # prod derleme (prisma generate + next build)
-npm run start      # prod sunucu
-npm run db:studio  # Prisma Studio
-npm run db:seed    # demo veri
+## 11) Hile test/kayıt modu
+
+Kendi sunucunda hile açıp anti-cheat'in **ne gördüğünü** kaydetmek için:
+
 ```
+/acrec on          # kayıt başlar (her 200ms durum + ateş/nişan/kamera)
+/acrec mark <not>  # o ana etiket koy (ör. "silent açtım")
+/acrec off         # durur; JSON dosyaya yazılır
+```
+
+Dosya: `resources/aeigs-anticheat/aeigs_rec_<oyuncu>_<zaman>.json`
+(sunucu konsolu tam yolu basar). Eşik ayarı ve false/kaçırma analizi için kullanılır.
+
+---
+
+## 12) REST API (v1) referansı
+
+Tümü `Authorization: Bearer aeigs_srv_…` ister; rate-limit'lidir.
+
+| Method & yol | Amaç |
+|--------------|------|
+| `POST /api/v1/heartbeat` | Sunucuyu çevrimiçi tutar, kuralları döndürür |
+| `POST /api/v1/players/sync` | Oyuncu listesi senkronu |
+| `POST /api/v1/positions` | Canlı konum/can/kalkan (harita) |
+| `POST /api/v1/detections` | Hile tespiti raporu (CRITICAL → oto-ban) |
+| `GET  /api/v1/bans` | Ban listesi (bağlantıda kontrol) |
+| `GET/POST /api/v1/actions/pending` · `/ack` | Panelden gelen cezalar |
+| `GET/POST /api/v1/commands/pending` · `/ack` | Konsol komutları |
+| `GET  /api/v1/whitelist` · `/blacklist` · `/admins` | Bypass/kara liste/yönetici |
+| `POST /api/v1/logs` | Log gönderimi |
+| `POST /api/v1/resources/sync` | Kaynak listesi |
+| `GET  /api/v1/screenshot/pending` · `POST /result` · `/upload` | Ekran görüntüsü |
+| `POST /api/v1/ingame-action` | Oyun içi yönetici aksiyonu |
+
+Panel tarafı (oturum tabanlı) API'ler `src/app/api/…` altında (auth, servers,
+admin/keys, redeem, checkout, ban-lookup, vb.).
+
+---
+
+## 13) Güvenlik notları
+
+- **Sırlar:** `AUTH_SECRET`, `LICENSE_HMAC_SECRET`, `DATABASE_URL` yalnızca env'de;
+  repoya asla girmez. Ham API token DB'de tutulmaz (HMAC hash).
+- **Token doğrulama:** her `/api/v1` isteğinde lisans durumu + süresi kontrol edilir.
+- **Rate limit:** `src/lib/ratelimit.ts` (ör. detections 240/dk).
+- **Güvenlik başlıkları:** `next.config.mjs` (X-Frame-Options DENY, nosniff, vb.).
+- **Whitelist bypass:** admin/içerik üreticiler tespitlerden muaf (`src/lib/bypass.ts`).
+- **False-pozitif ilkesi:** tespitler yüksek eşik + strike + legit-muafiyet ile
+  tasarlandı; godmode aktif testi oyuncuya zarar vermeden (anında geri yükleyerek) çalışır.
+- ⚠️ Üçüncü parti/obfuscated hile modüllerini sunucuda **çalıştırma** (backdoor riski).
+
+---
+
+## 14) Yayınlama (Netlify)
+
+Ayrıntılı adımlar: **[`NETLIFY-DEPLOY.md`](./NETLIFY-DEPLOY.md)**. Özet:
+
+1. **Neon**'da Postgres oluştur, pooled connection string'i al.
+2. Kendi makinenden bir kez: `DATABASE_URL=… npx prisma db push` (+ `npm run db:seed`).
+3. Netlify'a GitHub'dan import et (ayarlar `netlify.toml`'dan gelir:
+   `@netlify/plugin-nextjs`, Node 20, Prisma Linux binary).
+4. Env değişkenlerini gir: `DATABASE_URL`, `AUTH_SECRET`, `LICENSE_HMAC_SECRET`, `APP_URL`.
+5. Deploy. Site URL'ini FiveM `config.lua`'daki `aeigs_api`'ye yaz.
+
+> Netlify serverless olduğu için **SQLite çalışmaz** — bulut Postgres zorunlu.
+
+---
+
+## 15) Sık sorunlar
+
+| Belirti | Sebep / çözüm |
+|---------|---------------|
+| Build: "Ortam değişkenleri doğrulanamadı" | Env eksik/kısa. `AUTH_SECRET`≥32, `LICENSE_HMAC_SECRET`≥16 |
+| "Can't reach database" | `DATABASE_URL` yanlış / `?sslmode=require` yok / pooled değil |
+| FiveM bağlanmıyor | `aeigs_api` sonu `/api/v1` mi, token doğru mu, site canlı mı |
+| 401 INVALID_TOKEN | Token `aeigs_srv_` ile başlamalı; panelde yeniden üret |
+| 403 LICENSE_INACTIVE/EXPIRED | Lisans askıda/iptal/süresi dolmuş |
+| Godmode banlanmıyor | `anti_invincibility` kuralı açık mı; `GodmodeActiveProbe` true mu |
+| Kayıt dosyası yok | `resources/aeigs-anticheat/` köküne bakılmalı (server/ değil) |
+
+---
+
+**Lisans:** özel/ticari. **Katkı:** geliştirme dalı `claude/fivem-anticheat-web-rhfu06`.
