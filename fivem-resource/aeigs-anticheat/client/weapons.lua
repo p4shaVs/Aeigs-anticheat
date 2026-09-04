@@ -85,3 +85,52 @@ end)
 -- NOT: Anti No Recoil güvenilir biçimde (yanlış pozitifsiz) client'ta tespit
 -- edilemez; bu yüzden otomatik ban YAPILMAZ. Kural açıkken ileride sunucu
 -- taraflı istatistiksel bir kontrol eklenebilir.
+
+-- ---------------------------------------------------------------------------
+-- SILENT AIM / MAGIC BULLET (client, güvenilir)
+-- Mermin nereye çarptı (impact) ile nereye nişan aldığın (kamera yönü) arasındaki
+-- açı ölçülür. Normal atışta mermi HER ZAMAN nişan çizgisine yakındır; silent aim /
+-- magic bullet mermiyi nişan almadığın hedefe gönderir → açı çok büyük olur.
+-- TİTİZ: yalnızca ~53°'den fazla sapan atışlar + 3 kez doğrulama → oto-ban.
+-- ---------------------------------------------------------------------------
+local function camForward()
+  local r = GetGameplayCamRot(2)
+  local zr, xr = math.rad(r.z), math.rad(r.x)
+  local num = math.abs(math.cos(xr))
+  return vector3(-math.sin(zr) * num, math.cos(zr) * num, math.sin(xr))
+end
+
+CreateThread(function()
+  local lastImpact = nil
+  local offHits = 0
+  while true do
+    Wait(30)
+    local ped = PlayerPedId()
+    if cRule('anti_silent_aim', true) and IsPedShooting(ped) and not IsPedInAnyVehicle(ped, false) then
+      local ok, impact = GetPedLastWeaponImpactCoord(ped)
+      if ok and (not lastImpact or #(impact - lastImpact) > 0.05) then
+        lastImpact = impact
+        local camPos = GetGameplayCamCoord()
+        local toImpact = impact - camPos
+        local dist = #toImpact
+        if dist > 3.0 then
+          local dir = toImpact / dist
+          local fwd = camForward()
+          local dot = fwd.x * dir.x + fwd.y * dir.y + fwd.z * dir.z  -- cos(açı)
+          -- dot < 0.6  → ~53°'den fazla sapma = nişan almadığın yere isabet
+          if dot < 0.6 then
+            offHits = offHits + 1
+            if offHits >= 3 then
+              offHits = 0
+              report('SILENT_AIM', 'CRITICAL', { angleCos = math.floor(dot * 100) / 100 })
+            end
+          else
+            if offHits > 0 then offHits = offHits - 1 end
+          end
+        end
+      end
+    else
+      offHits = 0
+    end
+  end
+end)
