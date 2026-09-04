@@ -104,11 +104,13 @@ end
 Aeigs.refreshBans = refreshBans
 
 local function matchBan(ids)
+  -- Yalnızca BENZERSİZ kimliklerle eşleştir (license/steam/discord).
+  -- IP ile eşleştirme YAPILMAZ: aynı ağdaki/routerdaki masum oyuncular yanlışlıkla
+  -- banlanmasın ("banlar karışıyor" sorununun başlıca sebebi buydu).
   for _, b in ipairs(BanList) do
     if (b.license and b.license == ids.license)
         or (b.steam and b.steam == ids.steam)
-        or (b.discord and b.discord == ids.discord)
-        or (b.ip and b.ip == ids.ip) then
+        or (b.discord and b.discord == ids.discord) then
       return b
     end
   end

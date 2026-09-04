@@ -61,88 +61,69 @@ end)
 -- ---------------------------------------------------------------------------
 -- Kritik tespitler: godmode / no-clip / super jump / teleport
 -- ---------------------------------------------------------------------------
-local noclipTicks = 0
-local godTicks = 0
-local lastPos = nil
-local lastDist = 0
+-- Kurallar (aeigs:rules ile gelir) — weapons.lua'daki cRule ile aynı mantık
+local function cRule(key, defaultOn)
+  local v = (AeigsRules or {})[key]
+  if v == nil then return defaultOn end
+  return v == true
+end
 
+local noclipTicks = 0
+local jumpConfirm = 0
+
+-- TELEPORT sunucu tarafında (server/live.lua) tespit edilir; client'ta yapılmaz
+-- (client kandırılabilir + noclip'le karışır). NoClip yalnızca "çarpışma kapalı"
+-- gibi GÜVENİLİR sinyalle otomatik banlanır. Godmode/invisible RAPOR edilir
+-- (client'ta yanlış-pozitifsiz tespit edilemez → asla otomatik ban yok).
 CreateThread(function()
   while true do
     Wait(500)
     local ped = PlayerPedId()
-    local pid = PlayerId()
     local now = GetGameTimer()
     local guard = now < spawnGuardUntil
-    local coords = GetEntityCoords(ped)
     local inVeh = IsPedInAnyVehicle(ped, false)
 
-    -- ---- GODMODE / INVINCIBILITY (sürekli kontrol → yanlış pozitif yok) ----
-    if not guard and not IsPedDeadOrDying(ped, true) then
-      if GetPlayerInvincible(pid) then
-        godTicks = godTicks + 1
-      else
-        godTicks = 0
-      end
-      -- ~4 sn (8 tick) kesintisiz invincible ise gerçek godmode kabul et
-      if godTicks >= 8 then
-        godTicks = 0
-        report('INVINCIBILITY', 'CRITICAL', { source = 'client' })
-      end
-    else
-      godTicks = 0
-    end
-
-    -- ---- NO-CLIP ----
+    -- ---- NO-CLIP (GÜVENİLİR): çarpışma kapalı + hareket + araçta değil ----
     if not guard then
-      local inValidAirState =
-        inVeh or IsPedFalling(ped) or IsPedSwimming(ped)
-        or GetPedParachuteState(ped) > 0 or IsPedRagdoll(ped)
-        or IsPedJumping(ped) or IsPedClimbing(ped)
       local collisionOff = GetEntityCollisionDisabled(ped)
-      local heightAbove = GetEntityHeightAboveGround(ped)
-      local moving = GetEntitySpeed(ped) > 2.0
-      if collisionOff and moving and not inVeh then
-        noclipTicks = noclipTicks + 2
-      elseif (not inValidAirState) and heightAbove > 3.0 and moving then
+      local moving = GetEntitySpeed(ped) > 1.5
+      if collisionOff and moving and not inVeh
+        and not IsPedFalling(ped) and not IsPedRagdoll(ped) then
         noclipTicks = noclipTicks + 1
       else
         noclipTicks = 0
       end
-      if noclipTicks >= 4 then
+      -- ~1.5 sn kesintisiz çarpışmasız hareket = noclip (kesin)
+      if noclipTicks >= 3 then
         noclipTicks = 0
         report('NOCLIP', 'CRITICAL', { source = 'client' })
       end
+    else
+      noclipTicks = 0
     end
 
-    -- ---- SUPER JUMP ----
-    if not guard and not inVeh and IsPedJumping(ped) then
+    -- ---- SUPER JUMP (yüksek eşik + doğrulama) ----
+    if not guard and cRule('anti_superjump', true) and not inVeh
+      and IsPedJumping(ped) and not IsPedRagdoll(ped) then
       local vz = GetEntityVelocity(ped)
-      -- normal zıplama ~4.5; hile ile 7.5+ dikey hız
-      local zv = vz.z or 0.0
-      if zv > 7.5 then
-        report('SUPER_JUMP', 'CRITICAL', { zVelocity = zv })
+      -- normal zıplama zVel ~4.5; hile 15+. 12 tavanı rampa/patlamayı dışlar.
+      if (vz.z or 0.0) > 12.0 then
+        jumpConfirm = jumpConfirm + 1
+        if jumpConfirm >= 2 then jumpConfirm = 0; report('SUPER_JUMP', 'CRITICAL', { zVelocity = math.floor(vz.z) }) end
       end
     end
 
-    -- ---- TELEPORT ---- (tek tuşla başka konuma ışınlanma)
-    -- Titiz: yalnızca YERDE, NORMAL durumdayken ANİ tek sıçrama teleporttur.
-    -- NoClip sürekli hızlı hareket eder (önceki tick de büyük) → teleport SAYILMAZ.
-    -- Araç, düşme, yüzme, paraşüt, noclip (çarpışmasız/havada) hariç tutulur.
-    if lastPos and now > AeigsTpGrace and not guard then
-      local dist = #(coords - lastPos)
-      local collisionOff = GetEntityCollisionDisabled(ped)
-      local heightAbove = GetEntityHeightAboveGround(ped)
-      local normalState =
-        not inVeh and not collisionOff and not IsPedFalling(ped)
-        and not IsPedSwimming(ped) and GetPedParachuteState(ped) == 0
-        and not IsPedRagdoll(ped) and not IsPedJumping(ped) and heightAbove < 6.0
-      -- Ani sıçrama: bu tick > 140m ama önceki tick < 40m (yani yürürken birden atladı)
-      if normalState and dist > 140.0 and lastDist < 40.0 then
-        report('TELEPORT', 'CRITICAL', { distance = math.floor(dist) })
-      end
-      lastDist = dist
+    -- ---- GODMODE / INVINCIBILITY — RAPOR (otomatik ban YOK: false riski) ----
+    if not guard and cRule('anti_invincibility', false) and not IsPedDeadOrDying(ped, true)
+      and GetPlayerInvincible(PlayerId()) then
+      report('INVINCIBILITY', 'HIGH', { source = 'client' })
     end
-    lastPos = coords
+
+    -- ---- INVISIBLE — RAPOR (otomatik ban YOK) ----
+    if not guard and cRule('anti_invisibility', false)
+      and not IsEntityVisible(ped) and not IsPedDeadOrDying(ped, true) and not inVeh then
+      report('INVISIBLE', 'HIGH', { source = 'client' })
+    end
   end
 end)
 

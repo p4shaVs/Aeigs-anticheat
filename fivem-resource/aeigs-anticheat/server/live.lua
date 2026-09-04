@@ -211,17 +211,20 @@ RegisterNetEvent('aeigs:adminAction', function(action, targetId, arg)
   elseif action == 'freeze' and target then
     TriggerClientEvent('aeigs:freeze', target, arg == 'on')
   elseif action == 'tp' and target then
-    -- yöneticiyi hedefe ışınla
+    -- yöneticiyi hedefe ışınla (yetkili → teleport tespitinden muaf)
     local ped = GetPlayerPed(target)
     local c = GetEntityCoords(ped)
+    Aeigs.grantTp(src)
     TriggerClientEvent('aeigs:teleport', src, c.x, c.y, c.z)
   elseif action == 'bring' and target then
     local ped = GetPlayerPed(src)
     local c = GetEntityCoords(ped)
+    Aeigs.grantTp(target)
     TriggerClientEvent('aeigs:teleport', target, c.x, c.y, c.z)
   elseif action == 'spectate' and target then
     local ped = GetPlayerPed(target)
     local c = GetEntityCoords(ped)
+    Aeigs.grantTp(src)
     TriggerClientEvent('aeigs:spectate', src, targetId, c.x, c.y, c.z)
   elseif action == 'announce' then
     TriggerClientEvent('aeigs:notify', -1, '~b~[Duyuru] ~w~' .. tostring(arg or ''))
@@ -274,6 +277,65 @@ RegisterNetEvent('aeigs:screenshotResult', function(reqId, url, adminId)
 end)
 
 -- ---------------------------------------------------------------------------
+-- SUNUCU TARAFLI TELEPORT TESPİTİ (kandırılamaz)
+-- Sunucu, oyuncunun koordinatını doğrudan okur. İki örnek arasındaki hız
+-- HİÇBİR aracın/uçağın ulaşamayacağı bir değeri (400 m/s) aşarsa = teleport.
+-- Böylece "Teleport to Waypoint" gibi harita ışınlamaları kesin yakalanır ve
+-- normal hareket/araç/uçak ASLA yanlış-pozitif vermez.
+-- ---------------------------------------------------------------------------
+local sPos = {}          -- src -> { x,y,z, t }
+local tpGrace = {}       -- src -> muafiyet bitiş ms (yetkili ışınlama/yeni giriş)
+
+function Aeigs.grantTp(src)
+  tpGrace[tonumber(src)] = GetGameTimer() + 8000
+end
+
+local TP_MAX_SPEED = 400.0  -- m/s (en hızlı jet ~150; 400 fiziksel olarak imkânsız)
+
+local function teleportScan()
+  local now = GetGameTimer()
+  for _, sid in ipairs(GetPlayers()) do
+    local src = tonumber(sid)
+    local ped = GetPlayerPed(src)
+    if ped and ped ~= 0 then
+      local c = GetEntityCoords(ped)
+      if c and not (c.x == 0.0 and c.y == 0.0 and c.z == 0.0) then
+        -- Zırh > 100 fiziksel olarak İMKANSIZDIR → kesin armor hack (yanlış-pozitif yok)
+        if (now - (sPos[src] and sPos[src].seen or now)) > 5000
+            and GetPedArmour(ped) > 100
+            and not (Aeigs.isWhitelisted and Aeigs.isWhitelisted(src)) then
+          TriggerEvent('aeigs:serverReport', src, 'ARMOR_HACK', 'CRITICAL', { armor = GetPedArmour(ped) })
+        end
+        local prev = sPos[src]
+        if not prev then
+          sPos[src] = { x = c.x, y = c.y, z = c.z, t = now, seen = now }
+        else
+          local dt = (now - prev.t) / 1000.0
+          local dist = #(c - vector3(prev.x, prev.y, prev.z))
+          local settled = (now - prev.seen) > 20000        -- girişten 20 sn sonra
+          local granted = tpGrace[src] and now < tpGrace[src]
+          if settled and not granted and dt > 0 and dist > 150.0 and (dist / dt) > TP_MAX_SPEED
+              and not (Aeigs.isWhitelisted and Aeigs.isWhitelisted(src)) then
+            -- Kesin teleport → sunucu raporu (banned ise oyuncu düşürülür)
+            TriggerEvent('aeigs:serverReport', src, 'TELEPORT', 'CRITICAL', { distance = math.floor(dist) })
+            sPos[src].seen = now + 5000  -- kısa süre tekrar tetiklenmesin
+          end
+          prev.x, prev.y, prev.z, prev.t = c.x, c.y, c.z, now
+        end
+      end
+    end
+  end
+  -- ayrılanları temizle
+  local online = {}
+  for _, sid in ipairs(GetPlayers()) do online[tonumber(sid)] = true end
+  for k in pairs(sPos) do if not online[k] then sPos[k] = nil; tpGrace[k] = nil end end
+end
+
+AddEventHandler('playerJoining', function()
+  Aeigs.grantTp(source)  -- yeni girişte ilk ışınlanma/yükleme muaf
+end)
+
+-- ---------------------------------------------------------------------------
 -- Döngüler
 -- ---------------------------------------------------------------------------
 CreateThread(function()
@@ -294,4 +356,9 @@ CreateThread(function()
   loop(Config.BlacklistInterval, refreshBlacklist)
   loop(Config.AdminInterval, refreshAdmins)
   loop(Config.ScreenshotInterval, pollScreenshots)
+
+  -- Teleport taraması ~1 sn (hassas ama ucuz)
+  CreateThread(function()
+    while true do Wait(1000); pcall(teleportScan) end
+  end)
 end)
