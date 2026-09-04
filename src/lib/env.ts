@@ -1,7 +1,10 @@
 import { z } from "zod";
 
-// Ortam değişkenlerini uygulama açılırken doğrula. Eksik/zayıf sırlar
-// prod'da erken hata versin diye burada topluca kontrol ediyoruz.
+// Ortam değişkenlerini doğrula. ÖNEMLİ: Doğrulama TEMBEL (lazy) yapılır —
+// yani `env.X` ilk kez OKUNDUĞUNDA (çalışma anında) çalışır, modül import
+// edildiğinde DEĞİL. Böylece Next.js build sırasında sayfa verisi toplarken
+// (env henüz enjekte edilmemişken) build çökmez; ama gerçek istek anında
+// eksik/zayıf sır yine hızlıca hata verir.
 const schema = z.object({
   DATABASE_URL: z.string().min(1),
   AUTH_SECRET: z.string().min(32, "AUTH_SECRET en az 32 karakter olmalı"),
@@ -12,15 +15,30 @@ const schema = z.object({
     .default("development"),
 });
 
-const parsed = schema.safeParse(process.env);
+type Env = z.infer<typeof schema>;
 
-if (!parsed.success) {
-  // Konsola okunabilir hata bas, uygulamayı durdur.
-  console.error(
-    "❌ Geçersiz ortam değişkenleri:",
-    parsed.error.flatten().fieldErrors
-  );
-  throw new Error("Ortam değişkenleri doğrulanamadı (.env dosyanızı kontrol edin)");
+let cached: Env | null = null;
+
+function load(): Env {
+  if (cached) return cached;
+  const parsed = schema.safeParse(process.env);
+  if (!parsed.success) {
+    console.error(
+      "❌ Geçersiz ortam değişkenleri:",
+      parsed.error.flatten().fieldErrors
+    );
+    throw new Error(
+      "Ortam değişkenleri doğrulanamadı (Netlify env değişkenlerini / .env dosyanızı kontrol edin)"
+    );
+  }
+  cached = parsed.data;
+  return cached;
 }
 
-export const env = parsed.data;
+// `env.DATABASE_URL` gibi erişimler eskisi gibi çalışır; doğrulama ilk
+// erişimde tetiklenir (import anında değil).
+export const env = new Proxy({} as Env, {
+  get(_target, prop: string) {
+    return load()[prop as keyof Env];
+  },
+}) as Env;
