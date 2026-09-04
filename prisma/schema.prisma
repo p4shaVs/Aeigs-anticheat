@@ -4,8 +4,8 @@
 
 generator client {
   provider      = "prisma-client-js"
-  // Netlify/Vercel (Linux) için gerekli binary. Lokalde de "native" çalışır.
-  binaryTargets = ["native", "rhel-openssl-3.0.x"]
+  // Netlify (Ubuntu 24.04 "noble" = OpenSSL 3.0) + lokal. "native" lokali kapsar.
+  binaryTargets = ["native", "debian-openssl-3.0.x"]
 }
 
 datasource db {

@@ -6,8 +6,9 @@
   publish = ".next"
 
 [build.environment]
-  # Prisma'nın Netlify'ın Linux ortamı için doğru binary'yi üretmesini sağlar.
-  PRISMA_CLI_BINARY_TARGETS = "native,rhel-openssl-3.0.x"
+  # NOT: PRISMA_CLI_BINARY_TARGETS env'i KULLANMA — "native"i env üzerinden
+  # tanımadığı için "Unknown binaryTarget native" hatası verir. Binary target
+  # yalnızca prisma/schema.prisma içindeki generator bloğunda tanımlı.
   NODE_VERSION = "20"
 
 [[plugins]]
