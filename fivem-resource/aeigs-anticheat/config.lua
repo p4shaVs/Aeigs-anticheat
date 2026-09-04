@@ -49,5 +49,18 @@ Config.ExplosiveBulletMax   = 4
 -- hiç azalmazsa hile say (5 ~ 2.5 sn kesintisiz ateş).
 Config.AmmoConfirmSamples   = 6
 
+-- ---------------------------------------------------------------------------
+-- HASAR SENTINEL — Godmode / Health hack (flag'e bakmadan, hasar-emilimiyle)
+-- Mantık: oyuncu vuruluyor ama canı/kalkanı düşmüyorsa = godmode. Kayıtlar
+-- gösterdi ki hile GetPlayerInvincible'ı TETİKLEMİYOR; tek gerçek "vuruldu ama
+-- can düşmedi". Bu yüzden yasal maksimumun (health<=200, armor<=100) altındaki
+-- boost'lar bile burada yakalanır. YANLIŞ POZİTİFİ önlemek için yüksek eşik.
+-- ---------------------------------------------------------------------------
+Config.GodmodeWindowMs      = 7000   -- değerlendirme penceresi
+Config.GodmodeMinHits       = 5      -- pencerede en az bu kadar isabet
+Config.GodmodeMinDamage     = 150    -- pencerede toplam en az bu kadar amaçlanan hasar
+Config.GodmodeHpTolerance   = 8      -- can bu kadar bile düşmediyse "hiç düşmedi" say
+Config.GodmodeStrikes       = 2      -- kaç pencere üst üste = ban
+
 -- İzinli kaynaklar dışından spawn olan entity'leri işaretle (protection.lua)
 Config.Debug = false

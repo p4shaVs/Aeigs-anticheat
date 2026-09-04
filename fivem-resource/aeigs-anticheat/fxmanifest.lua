@@ -13,6 +13,7 @@ server_scripts {
   'server/main.lua',
   'server/live.lua',
   'server/protection.lua',
+  'server/damage_sentinel.lua',   -- godmode/health hack (hasar-emilimi, false'suz)
   'server/recorder.lua',
 }
 
