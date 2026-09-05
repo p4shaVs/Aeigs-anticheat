@@ -28,13 +28,19 @@ CreateThread(function()
   end
 end)
 
--- Hafif "çarpışma durumu" sinyali (~800ms) — sunucunun TELEPORT taraması
--- büyük bir sıçramayı NOCLIP'e mi yoksa gerçek ışınlanmaya mı bağlayacağını
--- bilsin diye. 3 sn'lik konum beacon'ından daha sık, çok ucuz (tek bool).
+-- Hafif "olası NoClip" sinyali (~250ms) — sunucunun TELEPORT taraması büyük
+-- bir sıçramayı NOCLIP'e mi yoksa gerçek ışınlanmaya mı bağlayacağını bilsin
+-- diye. HIZLI olması şart: sunucu teleport taraması 1 sn'de bir çalışıyor,
+-- bu sinyal ondan daha sık gelmezse teleport taraması önce davranıp yanlış
+-- sebeple (TELEPORT) banlayabilir. Çarpışma bayrağını hiç set etmeyen
+-- noclip'leri de yakalamak için "zemin altında" sinyali de eklendi.
 CreateThread(function()
   while true do
-    Wait(800)
-    TriggerServerEvent('aeigs:collState', GetEntityCollisionDisabled(PlayerPedId()))
+    Wait(250)
+    local ped = PlayerPedId()
+    local height = GetEntityHeightAboveGround(ped)
+    local underground = height and height < -0.6 and not IsPedFalling(ped) and not IsPedRagdoll(ped)
+    TriggerServerEvent('aeigs:collState', GetEntityCollisionDisabled(ped) or underground)
   end
 end)
 
