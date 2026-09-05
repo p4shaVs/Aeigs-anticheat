@@ -106,6 +106,7 @@ end
 -- ---------------------------------------------------------------------------
 RegisterNetEvent('aeigs:pos', function(d)
   local src = source
+  if Aeigs.eventLimited(src, 'pos', 10, 2000) then return end
   local ids = Aeigs.getIdents(src)
   if not ids.license then return end
   if type(d) ~= 'table' then return end
@@ -121,6 +122,7 @@ end)
 -- taramasının NoClip'le karışmaması (yanlış sebep) için kullanılır.
 local CollState = {}  -- src -> { on, t }
 RegisterNetEvent('aeigs:collState', function(collisionOff)
+  if Aeigs.eventLimited(source, 'collState', 15, 2000) then return end
   CollState[source] = { on = collisionOff == true, t = GetGameTimer() }
 end)
 local function recentlyNoclip(src, withinMs)
@@ -316,6 +318,7 @@ end
 --- çapasını sıfırla ki eski konumla kıyaslanıp TELEPORT atılmasın.
 RegisterNetEvent('aeigs:respawnAnchor', function()
   local src = source
+  if Aeigs.eventLimited(src, 'respawnAnchor', 10, 5000) then return end
   sPos[src] = nil
   Aeigs.grantTp(src)
 end)

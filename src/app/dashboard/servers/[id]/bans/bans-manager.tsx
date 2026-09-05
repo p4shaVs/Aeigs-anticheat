@@ -109,6 +109,10 @@ export function BansManager({ serverId, bans }: { serverId: string; bans: BanRow
             <Icons.search size={15} className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-500" />
             <input className="input h-9 pl-9 text-sm" placeholder="Ban ID, Discord, License, isim…" value={query} onChange={(e) => setQuery(e.target.value)} />
           </div>
+          <a href={`/api/servers/${serverId}/bans/export`}
+            className="flex items-center gap-1.5 rounded-lg border border-white/10 px-3 py-2 text-xs font-medium text-slate-300 transition hover:border-white/20">
+            <Icons.download size={14} /> CSV İndir
+          </a>
           <button onClick={() => bulk("clearInactive")} disabled={busy !== null || inactiveCount === 0}
             className="flex items-center gap-1.5 rounded-lg border border-white/10 px-3 py-2 text-xs font-medium text-slate-300 transition hover:border-white/20 disabled:opacity-40">
             <Icons.trash size={14} /> Kaldırılanları Temizle

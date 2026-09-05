@@ -6,6 +6,9 @@ import { AreaTrend, DonutChart } from "@/components/charts";
 import { Icons } from "@/components/icons";
 import { parseJson, timeAgo, relativeDays } from "@/lib/utils";
 import { featureLabel } from "@/lib/features";
+import { sanitizeRules } from "@/lib/rules";
+import { sanitizeActions } from "@/lib/detection-actions";
+import { computeSecurityScore } from "@/lib/security-score";
 
 export const dynamic = "force-dynamic";
 
@@ -27,6 +30,17 @@ export default async function ServerOverview({
   ]);
 
   const features = parseJson<string[]>(server.licenseKey?.features ?? "[]", []);
+
+  const config = parseJson<{ rules?: Record<string, boolean>; actions?: Record<string, string> }>(
+    server.config,
+    {}
+  );
+  const security = computeSecurityScore({
+    rules: sanitizeRules(config.rules),
+    actions: sanitizeActions(config.actions),
+    online: server.status === "ONLINE",
+    acVersion: server.acVersion,
+  });
 
   return (
     <div className="space-y-6">
@@ -60,6 +74,9 @@ export default async function ServerOverview({
           </div>
         </div>
       )}
+
+      {/* Güvenlik Skoru */}
+      <SecurityScoreCard server={server} security={security} />
 
       {/* Stat kartları */}
       <div className="grid gap-4 sm:grid-cols-2 xl:grid-cols-4">
@@ -143,6 +160,71 @@ export default async function ServerOverview({
         </Card>
       </div>
     </div>
+  );
+}
+
+function SecurityScoreCard({
+  server,
+  security,
+}: {
+  server: { id: string };
+  security: ReturnType<typeof computeSecurityScore>;
+}) {
+  const gradeMeta: Record<
+    ReturnType<typeof computeSecurityScore>["grade"],
+    { label: string; ring: string; text: string; bar: string }
+  > = {
+    excellent: { label: "Mükemmel", ring: "ring-emerald-500/30", text: "text-emerald-300", bar: "bg-emerald-400" },
+    good: { label: "İyi", ring: "ring-brand-500/30", text: "text-brand-300", bar: "bg-brand-400" },
+    fair: { label: "Orta", ring: "ring-amber-500/30", text: "text-amber-300", bar: "bg-amber-400" },
+    weak: { label: "Zayıf", ring: "ring-orange-500/30", text: "text-orange-300", bar: "bg-orange-400" },
+    critical: { label: "Kritik", ring: "ring-rose-500/30", text: "text-rose-300", bar: "bg-rose-400" },
+  };
+  const meta = gradeMeta[security.grade];
+
+  return (
+    <Card className={`ring-1 ring-inset ${meta.ring}`}>
+      <div className="flex flex-col gap-5 sm:flex-row sm:items-center">
+        <div className="flex shrink-0 items-center gap-4">
+          <div className="relative grid h-20 w-20 shrink-0 place-items-center">
+            <svg viewBox="0 0 36 36" className="h-20 w-20 -rotate-90">
+              <circle cx="18" cy="18" r="15.5" fill="none" stroke="currentColor" strokeWidth="3" className="text-white/5" />
+              <circle
+                cx="18" cy="18" r="15.5" fill="none" stroke="currentColor" strokeWidth="3" strokeLinecap="round"
+                strokeDasharray={`${(security.score / 100) * 97.4} 97.4`}
+                className={meta.text}
+              />
+            </svg>
+            <span className="absolute text-xl font-bold text-white">{security.score}</span>
+          </div>
+          <div>
+            <p className="text-xs uppercase tracking-wide text-slate-500">Güvenlik Skoru</p>
+            <p className={`text-lg font-semibold ${meta.text}`}>{meta.label}</p>
+          </div>
+        </div>
+
+        <div className="grid flex-1 grid-cols-2 gap-3 sm:grid-cols-4">
+          {security.breakdown.map((b) => (
+            <div key={b.label} className="min-w-0">
+              <div className="mb-1 flex items-center justify-between text-xs">
+                <span className="truncate text-slate-400">{b.label}</span>
+                <span className="text-slate-500">{b.score}/{b.max}</span>
+              </div>
+              <div className="h-1.5 w-full overflow-hidden rounded-full bg-white/5">
+                <div className={`h-full rounded-full ${meta.bar}`} style={{ width: `${(b.score / b.max) * 100}%` }} />
+              </div>
+              <p className="mt-1 truncate text-[11px] text-slate-600" title={b.hint}>{b.hint}</p>
+            </div>
+          ))}
+        </div>
+
+        {security.score < 70 && (
+          <LinkButton href={`/dashboard/servers/${server.id}/rules`} variant="secondary" icon="shieldCheck" className="shrink-0">
+            İyileştir
+          </LinkButton>
+        )}
+      </div>
+    </Card>
   );
 }
 

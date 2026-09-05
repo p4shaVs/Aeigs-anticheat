@@ -43,6 +43,31 @@ function Aeigs.getRules()
   return ServerConfig.rules or {}
 end
 
+-- ---------------------------------------------------------------------------
+-- Kendi network event'lerimiz için oran sınırlayıcı (sertleştirme).
+-- Amaç: bir hilecinin aeigs:report/aeigs:aim/aeigs:pos gibi event'lerimizi
+-- spam edip anti-cheat'in kendisini (ve panel API'sini) yorması/DoS etmesini
+-- önlemek. Aşan istekler sessizce (hata basmadan) atlanır.
+-- ---------------------------------------------------------------------------
+local eventBuckets = {}
+function Aeigs.eventLimited(src, name, limit, windowMs)
+  local key = tostring(src) .. ':' .. name
+  local now = GetGameTimer()
+  local b = eventBuckets[key]
+  if not b or now > b.reset then
+    eventBuckets[key] = { count = 1, reset = now + windowMs }
+    return false
+  end
+  b.count = b.count + 1
+  return b.count > limit
+end
+AddEventHandler('playerDropped', function()
+  local s = tostring(source)
+  for k in pairs(eventBuckets) do
+    if k:sub(1, #s + 1) == s .. ':' then eventBuckets[k] = nil end
+  end
+end)
+
 -- Diğer modüllerin (live.lua, protection.lua) kullanabilmesi için köprüle.
 Aeigs.getIdents = getIdents
 Aeigs.findByLicense = findByLicense
@@ -244,6 +269,7 @@ end
 
 RegisterNetEvent('aeigs:report', function(dtype, severity, details)
   local src = source
+  if Aeigs.eventLimited(src, 'report', 30, 10000) then return end
   local ids = getIdents(src)
   local pname = GetPlayerName(src) or ('Player#' .. src)
   Aeigs.request('/detections', 'POST', {

@@ -228,9 +228,11 @@ Akış:
 
 ### Müşteri paneli (`/dashboard`)
 Sunucular listesi · yeni sunucu · **Kod Kullan** · sunucu başına:
-genel bakış, oyuncular, banlar, kick/uyarı, **kurallar (toggle)**, whitelist (bypass),
-blacklist (araç/silah/model), **3D harita**, izleme, konsol, loglar, olaylar,
-**sorgulama (lookup)**, analytics, kaynaklar (start/stop/restart), ayarlar (token).
+genel bakış (**Güvenlik Skoru** widget'ı ile), oyuncular, banlar (**ban replay**
+izleyici + **CSV dışa aktarma**), kick/uyarı, **bağlantılı hesaplar** (ban atlatma
+tespiti), **kurallar + aksiyonlar** (her hile için Log/Kick/Ban seçimi), whitelist
+(bypass), blacklist (araç/silah/model), **3D harita**, izleme, konsol, loglar,
+olaylar, **sorgulama (lookup)**, analytics, kaynaklar (start/stop/restart), ayarlar (token).
 
 ### Admin paneli (`/admin`)
 Genel bakış · **key üretici** · ürünler · kullanıcılar · sunucular · **denetim (audit) log**.
@@ -245,27 +247,34 @@ FiveM API'leri **Bearer token** tabanlı.
 ### Client tespitleri (her hile ayrı dosya — `client/detections/`)
 | Dosya | Yakaladığı | Yöntem |
 |-------|-----------|--------|
-| `noclip.lua` | NoClip | Çarpışma kapalı + hareket, ~2 sn |
-| `godmode.lua` | Godmode | Native bayrak taraması (invincible/proofs/config-flag), 25 sn/6 doğrulama → ban |
+| `noclip.lua` | NoClip (yaya + araç) | Çarpışma kapalı VEYA zemin altında hareket, ~600ms, iki bağımsız sinyal |
+| `flyhack.lua` | Fly Hack | Sürdürülebilir (~2.4 sn) yerçekimsiz uçuş/asılı kalma |
+| `godmode.lua` | Godmode (destekleyici) | Native bayrak taraması (invincible/proofs), rapor-only |
 | `superjump.lua` | Super Jump | Beast-jump native + dikey hız |
 | `speedhack.lua` | Speed hack | Yaya >18 m/s, araç >130 m/s |
-| `aimbot.lua` | Aimbot | Ani "snap" + düşman oyuncuya kilit |
+| `aimbot.lua` | Aimbot | Katman 1: ani "snap"; Katman 2: hareketli düşmana 4+ sn kesintisiz kilit |
 | `silentaim.lua` | Silent aim / magic bullet | Kamera yönünü sunucuya bildirir |
 | `weapons.lua` | Infinite ammo / no reload / kara liste silah | Mermi sabitliği + envanter |
-| `extras.lua` | Freecam/spectate/stamina/model/invisible | Rapor-only |
+| `extras.lua` | Freecam/spectate/stamina/model/invisible/prop-disguise | Rapor-only |
 
-Ortak altyapı (`core.lua`): 200ms durum önbelleği, `Aeigs.rule()` (panel kuralı),
-`Aeigs.report()` (throttle'lı rapor), `Aeigs.strike()` (N vuruş/pencere),
-`Aeigs.active()` (spawn öncesi tespit çalışmaz), legit-muafiyet (spawn/tp/revive).
+Ortak altyapı (`core.lua`): 200ms durum önbelleği, ped-değişim (multichar/respawn)
+otomatik algısı + sunucu çapa sıfırlama, ~8 sn'lik **replay tamponu** (CRITICAL
+raporlara otomatik eklenir), `Aeigs.rule()` (panel kuralı), `Aeigs.report()`
+(throttle'lı rapor), `Aeigs.strike()` (N vuruş/pencere), `Aeigs.active()` (spawn
+öncesi tespit çalışmaz), legit-muafiyet (spawn/tp/revive).
 
-### Server korumaları (`server/`)
-- `protection.lua` — weaponDamageEvent (silent aim açı, illegal weapon, damage
-  multiplier), explosionEvent (patlayıcı mermi), entityCreating (kara liste),
-  giveWeaponEvent.
-- `live.lua` — teleport taraması (koordinat sıçraması), armor>100, konum/whitelist/
-  blacklist/admin senkron.
-- `godmode_guard.lua` — **genel godmode/health-hack**: oyuncu vuruldu ama canı
-  düşmediyse (flag/değere bakmadan) → ban.
+### Server korumaları (`server/`) — ANA yöntem, client'tan bağımsız/kandırılamaz
+- `godmode_guard.lua` — **godmode/health-hack ana yöntemi**: biri gerçekten
+  vuruluyor (weaponDamageEvent) ama canı hiç düşmüyorsa → ban. Server kendi
+  `GetEntityHealth`'ini okur; client script'ler karışamaz.
+- `live.lua` — teleport taraması (koordinat sıçraması, ped-değişim/multichar'dan
+  muaf), NoClip ile Teleport ayrışması (`aeigs:collState`), armor>100,
+  konum/whitelist/blacklist/admin senkron, kendi event'lerimiz için oran
+  sınırlayıcı (`Aeigs.eventLimited`).
+- `protection.lua` — weaponDamageEvent (silent aim açı — aşırı sapmada tek
+  vuruşta ban, orta sapmada 2 doğrulama), illegal weapon, damage multiplier,
+  **rapid fire** ve **wallbang/ESP göstergesi** (ikisi de rapor-only, yumuşak
+  sinyal), explosionEvent (patlayıcı mermi), entityCreating (kara liste).
 
 ### Ban akışı
 Client/Server tespit → `TriggerServerEvent('aeigs:report'/'aeigs:serverReport')` →

@@ -22,23 +22,23 @@
 -- ayrıca client/main.lua'daki aeigs:collState sinyali de hızlandırıldı ki
 -- sunucunun teleport taraması bunu "TELEPORT" diye yanlış etiketlemesin.
 
-local ticksA, ticksB = 0, 0
+local ticksA, ticksB, ticksV = 0, 0, 0
 
 CreateThread(function()
   while true do
     Wait(200)
     if Aeigs.rule('anti_noclip', true) and Aeigs.active() and not Aeigs.tpGrace() then
       local S = Aeigs.S
-      if not S.ped then ticksA, ticksB = 0, 0; goto cont end
+      if not S.ped then ticksA, ticksB, ticksV = 0, 0, 0; goto cont end
 
       local vz = (S.vel and S.vel.z) or 0.0
       local dropping = S.falling or vz < -2.0
-      local baseSafe = S.ped and not S.inVeh and not S.dead and not S.ragdoll
+      local baseSafe = not S.inVeh and not S.dead and not S.ragdoll
         and not S.climbing and not S.jumping and not S.swimming
         and S.parachute <= 0 and not IsPedInParachuteFreeFall(S.ped)
         and not S.frozen
 
-      -- SİNYAL A: çarpışma kapalı + hareket ediyor + düşmüyor
+      -- SİNYAL A: çarpışma kapalı + hareket ediyor + düşmüyor (yaya)
       if baseSafe and S.collisionOff and S.speed > 1.5 and not dropping then
         ticksA = ticksA + 1
       else
@@ -52,16 +52,27 @@ CreateThread(function()
         ticksB = 0
       end
 
+      -- SİNYAL V: ARAÇ noclip — sürücüsü/yolcusu olduğun araç çarpışması
+      -- kapalıyken hareket ediyor (duvar/dağ içinden araçla geçme).
+      if S.inVeh and S.veh ~= 0 and GetEntityCollisionDisabled(S.veh) and S.vehSpeed > 1.5 then
+        ticksV = ticksV + 1
+      else
+        ticksV = 0
+      end
+
       if ticksA >= 3 then
-        ticksA, ticksB = 0, 0
+        ticksA, ticksB, ticksV = 0, 0, 0
         Aeigs.report('NOCLIP', 'CRITICAL', { source = 'collision' })
       elseif ticksB >= 3 then
-        ticksA, ticksB = 0, 0
+        ticksA, ticksB, ticksV = 0, 0, 0
         Aeigs.report('NOCLIP', 'CRITICAL', { source = 'underground' })
+      elseif ticksV >= 3 then
+        ticksA, ticksB, ticksV = 0, 0, 0
+        Aeigs.report('VEHICLE_NOCLIP', 'CRITICAL', { source = 'vehicle_collision' })
       end
       ::cont::
     else
-      ticksA, ticksB = 0, 0
+      ticksA, ticksB, ticksV = 0, 0, 0
     end
   end
 end)

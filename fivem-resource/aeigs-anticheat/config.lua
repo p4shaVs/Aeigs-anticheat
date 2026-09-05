@@ -22,7 +22,7 @@ Config.BlacklistInterval   = 60   -- kara listeyi tazeler
 Config.AdminInterval       = 60   -- yönetici listesi + izinleri tazeler
 Config.ScreenshotInterval  = 5    -- bekleyen ekran görüntüsü isteklerini çeker
 
-Config.AcVersion = '0.1.0'
+Config.AcVersion = '0.3.0'
 
 -- ---------------------------------------------------------------------------
 -- Ekran görüntüsü (izleme) — screenshot-basic kaynağı gerekir.

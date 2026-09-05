@@ -49,6 +49,7 @@ function serverNav(id: string): NavSection[] {
         { href: `${b}/warns`, label: "Uyarılar", icon: "warn" },
         { href: `${b}/kicks`, label: "Kickler", icon: "kick" },
         { href: `${b}/bans`, label: "Yasaklar", icon: "ban" },
+        { href: `${b}/linked-accounts`, label: "Bağlantılı Hesaplar", icon: "link" },
         { href: `${b}/whitelist`, label: "Bypass", icon: "shieldCheck" },
       ],
     },

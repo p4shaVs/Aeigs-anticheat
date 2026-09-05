@@ -79,6 +79,7 @@ export const RULE_GROUPS: RuleGroup[] = [
       { key: "anti_damage_multiplier", label: "Anti Damage Multiplier", description: "Hasar çarpanı limiti", default: true },
       { key: "anti_aimbot", label: "Anti Aimbot", description: "Otomatik nişan", default: true },
       { key: "anti_silent_aim", label: "Anti Silent Aim", description: "Gizli nişan", default: true },
+      { key: "anti_wallhack", label: "Anti Wallhack / ESP", description: "Görüş hattı olmadan isabet (rapor)", default: true },
     ],
   },
   {

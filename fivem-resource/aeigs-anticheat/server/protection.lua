@@ -98,15 +98,79 @@ end)
 -- ---------------------------------------------------------------------------
 local aimData = {}
 RegisterNetEvent('aeigs:aim', function(px, py, pz, fx, fy, fz)
+  if Aeigs.eventLimited(source, 'aim', 20, 1000) then return end
   aimData[source] = {
     pos = vector3(px + 0.0, py + 0.0, pz + 0.0),
     fwd = vector3(fx + 0.0, fy + 0.0, fz + 0.0),
     t = GetGameTimer(),
   }
 end)
-AddEventHandler('playerDropped', function() aimData[source] = nil end)
+AddEventHandler('playerDropped', function()
+  local s = source
+  aimData[s] = nil
+end)
 
 local silentStrike = {}
+
+-- ---------------------------------------------------------------------------
+-- RAPID FIRE (fire-rate hilesi) — RAPOR-ONLY, yumuşak sinyal.
+-- Aynı silahtan ardışık isabetler arasındaki süre, hiçbir gerçek silahın
+-- ulaşamayacağı kadar kısaysa (60ms = 1000 rpm üstü) işaretle. Ateş hızı
+-- netcode/lag'e duyarlı olduğu için TİTİZ: çok sayıda ardışık ihlal ister,
+-- asla ban atmaz — sadece panelde görünür, isterseniz manuel inceleyin.
+-- ---------------------------------------------------------------------------
+local lastShot = {}      -- [src][weaponHash] = son isabet zamanı
+local rapidFireStrike = {}
+
+local function checkRapidFire(src, weaponHash)
+  if not ruleOn('anti_rapid_fire') then return end
+  lastShot[src] = lastShot[src] or {}
+  local now = GetGameTimer()
+  local last = lastShot[src][weaponHash]
+  lastShot[src][weaponHash] = now
+  if not last then return end
+  local dt = now - last
+  if dt > 0 and dt < 60 then
+    rapidFireStrike[src] = (rapidFireStrike[src] or 0) + 1
+    if rapidFireStrike[src] >= 8 then
+      rapidFireStrike[src] = 0
+      TriggerEvent('aeigs:serverReport', src, 'RAPID_FIRE', 'MEDIUM', { weapon = weaponHash, dt = dt })
+    end
+  else
+    rapidFireStrike[src] = 0
+  end
+end
+
+-- ---------------------------------------------------------------------------
+-- WALLBANG / ESP GÖSTERGESİ — RAPOR-ONLY, yumuşak sinyal.
+-- Vurulan oyuncu ile atıcı arasında görüş hattı (LOS) TAMAMEN engelliyken
+-- (duvarın arkasından, aradaki geometri kesin) isabet gitmesi ESP+ateş
+-- kombinasyonuna işaret eder. Netcode/gecikme yüzünden nadiren yanlış
+-- olabileceğinden TİTİZ: çok sayıda doğrulama ister, asla ban atmaz.
+-- ---------------------------------------------------------------------------
+local losStrike = {}
+
+local function checkWallbang(src, victimPed, shooterPed)
+  if not ruleOn('anti_wallhack') then return end
+  if not DoesEntityExist(shooterPed) or not DoesEntityExist(victimPed) then return end
+  local dist = #(GetEntityCoords(shooterPed) - GetEntityCoords(victimPed))
+  if dist < 8.0 then return end  -- yakın mesafede duvar-kenarı false riskini azalt
+  local clear = HasEntityClearLosToEntity(shooterPed, victimPed, 17)
+  if not clear then
+    losStrike[src] = (losStrike[src] or 0) + 1
+    if losStrike[src] >= 5 then
+      losStrike[src] = 0
+      TriggerEvent('aeigs:serverReport', src, 'WALLBANG', 'MEDIUM', { dist = math.floor(dist) })
+    end
+  else
+    losStrike[src] = math.max(0, (losStrike[src] or 0) - 1)
+  end
+end
+
+AddEventHandler('playerDropped', function()
+  local s = source
+  silentStrike[s] = nil; lastShot[s] = nil; rapidFireStrike[s] = nil; losStrike[s] = nil
+end)
 
 -- ---------------------------------------------------------------------------
 -- Silah hasarı — imkânsız hasar (temel örnek)
@@ -145,6 +209,21 @@ AddEventHandler('weaponDamageEvent', function(sender, data)
             end
           end
         end
+      end
+    end
+  end
+
+  -- Rapid fire + wallbang/ESP (rapor-only, yumuşak sinyaller) — oyuncu
+  -- hedeflerine bakar, whitelist'li atıcılar hariç tutulur.
+  if data and (data.hitGlobalIds or data.hitGlobalId)
+      and not (Aeigs.isWhitelisted and Aeigs.isWhitelisted(src)) then
+    if data.weaponType then checkRapidFire(src, data.weaponType) end
+    local shooterPed = GetPlayerPed(src)
+    local ids2 = data.hitGlobalIds or { data.hitGlobalId }
+    for _, nid in ipairs(ids2) do
+      local ent = NetworkGetEntityFromNetworkId(nid)
+      if ent and ent ~= 0 and GetEntityType(ent) == 1 and IsPedAPlayer(ent) then
+        checkWallbang(src, ent, shooterPed)
       end
     end
   end

@@ -273,6 +273,13 @@ export const Icons = {
       <rect x="14" y="4" width="4" height="16" rx="1" />
     </Base>
   ),
+  link: (p: IconProps) => (
+    <Base {...p}>
+      <path d="M9 17H7A5 5 0 0 1 7 7h2" />
+      <path d="M15 7h2a5 5 0 1 1 0 10h-2" />
+      <path d="M8 12h8" />
+    </Base>
+  ),
 };
 
 export type IconName = keyof typeof Icons;

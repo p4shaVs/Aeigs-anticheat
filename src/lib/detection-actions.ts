@@ -27,8 +27,10 @@ export const DETECTION_TYPES: DetectionTypeDef[] = [
   { type: "NOCLIP", label: "NoClip", category: "movement", defaultAction: "BAN" },
   { type: "TELEPORT", label: "Teleport / Işınlanma", category: "movement", defaultAction: "BAN" },
   { type: "SUPER_JUMP", label: "Super Jump", category: "movement", defaultAction: "BAN" },
+  { type: "FLYHACK", label: "Fly Hack (yerçekimsiz uçuş)", category: "movement", defaultAction: "BAN" },
   { type: "SPEED_HACK", label: "Speed Hack (yaya)", category: "movement", defaultAction: "BAN" },
   { type: "VEHICLE_SPEED", label: "Speed Hack (araç)", category: "movement", defaultAction: "BAN" },
+  { type: "VEHICLE_NOCLIP", label: "NoClip (araç)", category: "movement", defaultAction: "BAN" },
 
   // Combat
   { type: "AIMBOT", label: "Aimbot", category: "combat", defaultAction: "BAN" },
@@ -39,6 +41,8 @@ export const DETECTION_TYPES: DetectionTypeDef[] = [
   { type: "DAMAGE_MULTIPLIER", label: "Hasar Çarpanı", category: "combat", defaultAction: "BAN" },
   { type: "EXPLOSIVE_BULLETS", label: "Patlayıcı Mermi", category: "combat", defaultAction: "BAN" },
   { type: "EXPLOSION", label: "Patlama Spam", category: "combat", defaultAction: "LOG" },
+  { type: "RAPID_FIRE", label: "Rapid Fire (ateş hızı)", category: "combat", defaultAction: "LOG" },
+  { type: "WALLBANG", label: "Wallbang / ESP Göstergesi", category: "combat", defaultAction: "LOG" },
 
   // Can & Zırh
   { type: "GODMODE", label: "Godmode / Yenilmezlik", category: "survival", defaultAction: "BAN" },
@@ -49,6 +53,7 @@ export const DETECTION_TYPES: DetectionTypeDef[] = [
   { type: "SPECTATE", label: "İzinsiz Spectate", category: "visual", defaultAction: "KICK" },
   { type: "INFINITE_STAMINA", label: "Sonsuz Dayanıklılık", category: "visual", defaultAction: "LOG" },
   { type: "MODEL_CHANGE", label: "Model Değişimi", category: "visual", defaultAction: "LOG" },
+  { type: "PROP_DISGUISE", label: "Prop Disguise (obje kılığı)", category: "visual", defaultAction: "LOG" },
   { type: "INVISIBLE", label: "Görünmezlik", category: "visual", defaultAction: "KICK" },
 
   // Nesne / Spawn

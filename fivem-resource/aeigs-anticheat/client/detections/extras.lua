@@ -44,6 +44,13 @@ CreateThread(function()
       Aeigs.report('INVISIBLE', 'HIGH', {})
     end
 
+    -- Prop disguise: oyuncu ped'i insan DEĞİL (obje/hayvan/araç modeline
+    -- bürünme exploit'i — "prop hunt" tarzı gizlenme). Aynı kurala bağlı
+    -- (anti_model_change), rapor-only.
+    if Aeigs.rule('anti_model_change', false) and not IsPedHuman(S.ped) and not S.dead then
+      Aeigs.report('PROP_DISGUISE', 'HIGH', { model = GetEntityModel(S.ped) })
+    end
+
     ::cont::
   end
 end)
