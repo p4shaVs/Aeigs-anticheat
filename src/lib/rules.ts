@@ -30,6 +30,7 @@ export const RULE_GROUPS: RuleGroup[] = [
       { key: "executor_4", label: "Executor Tespiti #4", description: "Anormal thread davranışı", default: true },
       { key: "executor_5", label: "Executor Tespiti #5", description: "Runtime bütünlük kontrolü", default: true },
       { key: "executor_6", label: "Executor Tespiti #6 (Önerilmez)", description: "Agresif mod — yanlış pozitif riski", default: false },
+      { key: "anti_cheat_menu", label: "Anti Cheat Menu (dolaylı)", description: "Zayıf sinyal — tek başına ban atmaz, tehdit skoruna eklenir", default: true },
     ],
   },
   {

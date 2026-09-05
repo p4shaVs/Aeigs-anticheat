@@ -4,13 +4,14 @@ game 'gta5'
 name 'aeigs-anticheat'
 author 'Aeigs'
 description 'Aeigs Anti-Cheat — kapsamlı FiveM koruması + web panel entegrasyonu'
-version '0.4.0'
+version '0.5.0'
 
 -- Sunucu tarafı: API entegrasyonu, kuyruk tüketimi, koruma kancaları
 server_scripts {
   'config.lua',
   'server/http.lua',
   'server/main.lua',
+  'server/threat_engine.lua',   -- merkezi tehdit skoru (cross-signal korelasyon)
   'server/live.lua',
   'server/protection.lua',
   'server/godmode_guard.lua',   -- godmode ANA yöntem: hasar-emilimi (server-authoritative)
@@ -33,6 +34,7 @@ client_scripts {
   'client/detections/silentaim.lua',
   'client/detections/norecoil.lua',       -- rapor-only
   'client/detections/nofalldamage.lua',   -- rapor-only
+  'client/detections/menu_detect.lua',    -- hile menüsü şüphesi (zayıf sinyal, threat_engine'e beslenir)
   'client/detections/weapons.lua',        -- ammo/reload + give-all-weapons + kara liste
   'client/detections/extras.lua',         -- freecam/spectate/stamina/model/invisible/prop-disguise
   'client/detections/recorder.lua', -- hile test/debug kaydedici

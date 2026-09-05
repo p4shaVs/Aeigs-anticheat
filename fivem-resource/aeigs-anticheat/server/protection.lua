@@ -276,6 +276,11 @@ end)
 AddEventHandler('aeigs:serverReport', function(src, dtype, severity, details)
   -- Bypass'lı oyuncular (yöneticiler/içerik üreticiler) raporlanmaz.
   if Aeigs.isWhitelisted and Aeigs.isWhitelisted(src) then return end
+  -- Merkezi tehdit skoruna besle — THREAT_SCORE'un kendi ürettiği raporu
+  -- tekrar kendine beslemesi (sonsuz döngü) İSTENMEZ, o yüzden hariç tutulur.
+  if dtype ~= 'THREAT_SCORE' and Aeigs.threatSignal then
+    Aeigs.threatSignal(src, dtype, details)
+  end
   local ids = {}
   for _, id in ipairs(GetPlayerIdentifiers(src)) do
     if id:sub(1, 8) == 'license:' then ids.license = id break end

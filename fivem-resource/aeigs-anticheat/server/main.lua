@@ -272,6 +272,9 @@ RegisterNetEvent('aeigs:report', function(dtype, severity, details)
   if Aeigs.eventLimited(src, 'report', 30, 10000) then return end
   local ids = getIdents(src)
   local pname = GetPlayerName(src) or ('Player#' .. src)
+  -- Merkezi tehdit skoruna besle (server/threat_engine.lua) — cross-signal
+  -- korelasyon için. Client'tan doğrudan çağrılamaz, bu yüzden bridge burada.
+  if Aeigs.threatSignal then Aeigs.threatSignal(src, tostring(dtype or 'UNKNOWN'), details) end
   Aeigs.request('/detections', 'POST', {
     type = tostring(dtype or 'UNKNOWN'),
     severity = tostring(severity or 'MEDIUM'),

@@ -75,6 +75,8 @@ export const DETECTION_TYPES: DetectionTypeDef[] = [
   // Diğer
   { type: "RECONNECT_SPAM", label: "Sık Giriş/Çıkış", category: "other", defaultAction: "LOG" },
   { type: "CHAT_FLOOD", label: "Sohbet Spam", category: "other", defaultAction: "KICK" },
+  { type: "CHEAT_MENU_SUSPECTED", label: "Hile Menüsü Şüphesi (zayıf sinyal)", category: "other", defaultAction: "LOG" },
+  { type: "THREAT_SCORE", label: "Tehdit Skoru (birleşik sinyal)", category: "other", defaultAction: "BAN" },
 ];
 
 const ALL_TYPES = new Set(DETECTION_TYPES.map((d) => d.type));

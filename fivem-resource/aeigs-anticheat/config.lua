@@ -22,7 +22,7 @@ Config.BlacklistInterval   = 60   -- kara listeyi tazeler
 Config.AdminInterval       = 60   -- yönetici listesi + izinleri tazeler
 Config.ScreenshotInterval  = 5    -- bekleyen ekran görüntüsü isteklerini çeker
 
-Config.AcVersion = '0.4.0'
+Config.AcVersion = '0.5.0'
 
 -- ---------------------------------------------------------------------------
 -- Ekran görüntüsü (izleme) — screenshot-basic kaynağı gerekir.
@@ -57,11 +57,22 @@ Config.AmmoConfirmSamples   = 6
 -- Client'taki native bayrak taraması (client/detections/godmode.lua) ikinci,
 -- destekleyici bir yöntemdir.
 -- ---------------------------------------------------------------------------
-Config.GodmodeWindowMs      = 6000   -- değerlendirme penceresi
-Config.GodmodeMinHits       = 3      -- pencerede en az bu kadar GERÇEK isabet
-Config.GodmodeMinDamage     = 80     -- pencerede toplam en az bu kadar amaçlanan hasar
-Config.GodmodeHpTolerance   = 5      -- can bu kadar bile düşmediyse "hiç düşmedi" say
-Config.GodmodeStrikes       = 1      -- tek pencere yeterli (server-authoritative, hızlı ban)
+Config.GodmodeWindowMs        = 6000   -- değerlendirme penceresi
+Config.GodmodeMinHits         = 3      -- pencerede en az bu kadar GERÇEK isabet
+Config.GodmodeMinDamage       = 80     -- pencerede toplam en az bu kadar amaçlanan hasar
+Config.GodmodePoolTolerance   = 10     -- can+zırh havuzu bu kadar bile düşmediyse "hiç düşmedi" say
+Config.GodmodeExpectedDropRatio = 0.0  -- 0 = tam düşüş beklenir; >0 verirsen zırh/kalkan emilimine tolerans tanır
+Config.GodmodeStrikes         = 1      -- tek pencere yeterli (server-authoritative, hızlı ban)
+Config.GodmodeSpawnGraceMs    = 6000   -- (re)spawn sonrası muafiyet — can/zırh geçiş anında false önler
+
+-- ---------------------------------------------------------------------------
+-- MERKEZİ TEHDİT SKORU (server/threat_engine.lua) — cross-signal korelasyon.
+-- Tek zayıf sinyal asla ban atmaz; farklı tespit tiplerinden biriken skor
+-- eşiği aşarsa (mevcut Aksiyonlar sistemine tabi) BAN/KICK tetiklenir.
+-- ---------------------------------------------------------------------------
+Config.ThreatDecayPerMin = 10   -- dakikada bu kadar puan azalır (temiz oyuncu affedilir)
+Config.ThreatKickAt      = 60   -- bu skora ulaşınca KICK önerilir (HIGH severity)
+Config.ThreatBanAt       = 100  -- bu skora ulaşınca BAN önerilir (CRITICAL severity)
 
 -- İzinli kaynaklar dışından spawn olan entity'leri işaretle (protection.lua)
 Config.Debug = false
