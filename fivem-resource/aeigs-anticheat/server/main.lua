@@ -264,6 +264,28 @@ local function flushLogs()
 end
 
 -- ---------------------------------------------------------------------------
+-- Ban anının kanıtı: gerçek ekran görüntüsü serisi. /detections'ın döndürdüğü
+-- screenshotRequestIds'i, oyuncu DropPlayer ile atılmadan ÖNCE client'ın
+-- mevcut 'aeigs:screenshot' handler'ına (client/main.lua) sırayla tetikler —
+-- screenshot-basic kurulu değilse client tarafı sessizce FAILED'a düşer.
+-- ---------------------------------------------------------------------------
+-- Not: DropPlayer'ı burst BİTENE kadar bekletiyoruz — aksi halde oyuncu
+-- ilk kareyi bile alamadan bağlantısı kesilir. onDone, burst sonunda
+-- (veya id yok/yüklenemiyorsa hemen) çağrılır.
+local function fireScreenshotBurst(src, ids, onDone)
+  local base = (ids and #ids > 0) and Aeigs.screenshotUploadBase and Aeigs.screenshotUploadBase() or nil
+  if not base then onDone() return end
+  CreateThread(function()
+    for _, rid in ipairs(ids) do
+      if not GetPlayerName(src) then break end
+      TriggerClientEvent('aeigs:screenshot', src, base, rid, nil)
+      Wait(400)
+    end
+    onDone()
+  end)
+end
+
+-- ---------------------------------------------------------------------------
 -- Client tespit köprüsü — client 'aeigs:report' ile bildirir → API'ye yaz
 -- ---------------------------------------------------------------------------
 
@@ -286,8 +308,12 @@ RegisterNetEvent('aeigs:report', function(dtype, severity, details)
     -- Aksiyon (LOG/KICK/BAN) panelden tespit tipi bazında seçilir; karar
     -- web API'sinde verilir (server.config.actions), burada uygulanır.
     if data.banned then
-      DropPlayer(src, ('[Aeigs] Yasaklandınız | Sebep: %s | Ban Kodu: %s')
-        :format(tostring(dtype or ''), data.banCode or '—'))
+      fireScreenshotBurst(src, data.screenshotRequestIds, function()
+        if GetPlayerName(src) then
+          DropPlayer(src, ('[Aeigs] Yasaklandınız | Sebep: %s | Ban Kodu: %s')
+            :format(tostring(dtype or ''), data.banCode or '—'))
+        end
+      end)
       refreshBans()
     elseif data.kicked then
       DropPlayer(src, ('[Aeigs] Kicklendiniz | Sebep: %s'):format(tostring(dtype or '')))

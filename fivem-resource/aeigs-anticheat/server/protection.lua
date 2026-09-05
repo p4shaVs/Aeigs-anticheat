@@ -273,6 +273,21 @@ end)
 -- ---------------------------------------------------------------------------
 -- Ortak rapor köprüsü (sunucu tespiti → API)
 -- ---------------------------------------------------------------------------
+-- Ban anının kanıtı: gerçek ekran görüntüsü serisi. DropPlayer'ı burst
+-- bitene kadar bekletir (aksi halde oyuncu ilk kareyi bile alamadan atılır).
+local function fireScreenshotBurst(src, ids, onDone)
+  local base = (ids and #ids > 0) and Aeigs.screenshotUploadBase and Aeigs.screenshotUploadBase() or nil
+  if not base then onDone() return end
+  CreateThread(function()
+    for _, rid in ipairs(ids) do
+      if not GetPlayerName(src) then break end
+      TriggerClientEvent('aeigs:screenshot', src, base, rid, nil)
+      Wait(400)
+    end
+    onDone()
+  end)
+end
+
 AddEventHandler('aeigs:serverReport', function(src, dtype, severity, details)
   -- Bypass'lı oyuncular (yöneticiler/içerik üreticiler) raporlanmaz.
   if Aeigs.isWhitelisted and Aeigs.isWhitelisted(src) then return end
@@ -297,8 +312,12 @@ AddEventHandler('aeigs:serverReport', function(src, dtype, severity, details)
     -- LOG (yalnızca kaydet) / KICK (at) / BAN (yasakla). Karar web API'sinde
     -- server.config.actions'a göre verilir; burada sadece uygulanır.
     if data.banned then
-      DropPlayer(src, ('[Aeigs] Yasaklandınız | Sebep: %s | Ban Kodu: %s')
-        :format(tostring(dtype or ''), data.banCode or '—'))
+      fireScreenshotBurst(src, data.screenshotRequestIds, function()
+        if GetPlayerName(src) then
+          DropPlayer(src, ('[Aeigs] Yasaklandınız | Sebep: %s | Ban Kodu: %s')
+            :format(tostring(dtype or ''), data.banCode or '—'))
+        end
+      end)
       if Aeigs.refreshBans then Aeigs.refreshBans() end
     elseif data.kicked then
       DropPlayer(src, ('[Aeigs] Kicklendiniz | Sebep: %s'):format(tostring(dtype or '')))

@@ -262,6 +262,9 @@ local function ssUploadBase()
   end
   return (Config.ApiBase or '') .. '/screenshot/upload'
 end
+-- Diğer server modülleri (main.lua, protection.lua) ban anındaki ekran
+-- görüntüsü serisini tetiklerken aynı yükleme adresini kullanmalı.
+Aeigs.screenshotUploadBase = ssUploadBase
 
 local function pollScreenshots()
   Aeigs.request('/screenshot/pending', 'GET', nil, function(ok, data)

@@ -11,6 +11,13 @@ interface ReplayFrame {
   coll: boolean; inVeh: boolean;
 }
 
+interface ShotData {
+  id: string;
+  url: string | null;
+  seq: number;
+  completedAt: string | null;
+}
+
 interface ReplayData {
   id: string;
   type: string;
@@ -20,6 +27,7 @@ interface ReplayData {
   createdAt: string;
   details: Record<string, unknown>;
   replay: ReplayFrame[];
+  screenshots: ShotData[];
 }
 
 // Ban anının son ~8 sn'sini oynatan izleyici: konum yolu (2D) + zaman
@@ -126,6 +134,7 @@ export function ReplayViewer({
   }, [frames, bounds, idx]);
 
   const cur = frames[idx];
+  const shots = data?.screenshots ?? [];
 
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/70 p-4" onClick={onClose}>
@@ -145,11 +154,37 @@ export function ReplayViewer({
           </button>
         </div>
 
+        {!loading && shots.length > 0 && (
+          <div className="mb-4">
+            <p className="mb-2 text-xs font-medium text-slate-400">
+              Ban anının kanıtı — oyuncunun ekranından gerçek anlık görüntü serisi
+            </p>
+            <div className="grid grid-cols-5 gap-1.5">
+              {shots.map((s) => (
+                <a
+                  key={s.id}
+                  href={s.url ?? undefined}
+                  target="_blank"
+                  rel="noreferrer"
+                  className="block aspect-video overflow-hidden rounded-lg border border-white/10 bg-base-950 hover:border-brand-500/50"
+                >
+                  {s.url && (
+                    // eslint-disable-next-line @next/next/no-img-element
+                    <img src={s.url} alt={`Kare ${s.seq + 1}`} className="h-full w-full object-cover" />
+                  )}
+                </a>
+              ))}
+            </div>
+          </div>
+        )}
+
         {loading ? (
           <div className="py-10 text-center text-sm text-slate-500">Yükleniyor…</div>
         ) : frames.length === 0 ? (
           <div className="py-10 text-center text-sm text-slate-500">
-            Bu tespit için replay verisi yok (eski kayıt ya da CRITICAL olmayan tespit).
+            {shots.length === 0
+              ? "Bu tespit için replay ya da ekran görüntüsü kanıtı yok (eski kayıt ya da CRITICAL olmayan tespit)."
+              : "Konum replay verisi yok, ancak yukarıda ekran görüntüsü kanıtı mevcut."}
           </div>
         ) : (
           <>

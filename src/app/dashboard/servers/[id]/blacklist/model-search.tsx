@@ -104,7 +104,13 @@ export function ModelSearch({
       const res = await fetch(`/api/servers/${serverId}/blacklist`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ kind: m.kind, model: m.name, label: m.label, action }),
+        // ÖNEMLİ: model olarak İSİM değil, doğrulanmış sayısal HASH gönderilir.
+        // Silah hash'leri (WEAPON_X) büyük harften türetilir; panel arama/
+        // görüntüleme için ismi küçük harfle tutar ama sunucuda GetHashKey
+        // ile tekrar hesaplanırsa (küçük harften) YANLIŞ hash çıkar ve o
+        // silah/model asla eşleşmez. Hash'i burada sabitleyip göndermek bu
+        // sorunu tüm türler için (araç/ped/obje/silah) kalıcı çözer.
+        body: JSON.stringify({ kind: m.kind, model: String(m.hash), label: m.label, action }),
       });
       const json = await res.json();
       if (json.ok) {

@@ -104,6 +104,7 @@ export const POST = handler(async (req: NextRequest) => {
   let banned = false;
   let kicked = false;
   let banCode: string | null = null;
+  let screenshotRequestIds: string[] = [];
 
   if (action === "BAN" && player) {
     // Tekrarlı ban engeli: oyuncunun zaten aktif banı varsa yeni ban açma.
@@ -152,6 +153,32 @@ export const POST = handler(async (req: NextRequest) => {
       ]);
       banned = true;
 
+      // "Ban anının kanıtı": gerçek ekran görüntüsü serisi (video DEĞİL —
+      // FiveM'in scripting API'si video kaydına izin vermiyor; bunun yerine
+      // oyuncunun o an ekranında GERÇEKTEN gördüğü birkaç kareyi
+      // screenshot-basic ile yakalayıp banla ilişkilendiriyoruz). Kaynak
+      // screenshot-basic kurulu değilse client tarafı bunu zaten sessizce
+      // FAILED'a düşürür (bkz. client/main.lua aeigs:screenshot handler).
+      const SHOT_COUNT = 5;
+      if (player.license) {
+        const shots = await db.$transaction(
+          Array.from({ length: SHOT_COUNT }, (_, i) =>
+            db.screenshotRequest.create({
+              data: {
+                serverId: server.id,
+                playerLicense: player.license!,
+                playerName: player.name,
+                detectionId: detection.id,
+                seq: i,
+                requestedBy: "AntiCheat",
+              },
+              select: { id: true },
+            })
+          )
+        );
+        screenshotRequestIds = shots.map((s) => s.id);
+      }
+
       void sendWebhook(server.config, "autoban", server.name, {
         player: player.name,
         reason: body.type,
@@ -179,5 +206,7 @@ export const POST = handler(async (req: NextRequest) => {
   await db.detection.update({ where: { id: detection.id }, data: { action } });
 
   // banned/kicked=true → kaynak oyuncuyu hemen atmalı.
-  return ok({ recorded: true, action, banned, kicked, banCode, whitelisted });
+  // screenshotRequestIds doluysa kaynak, DropPlayer'dan ÖNCE bu id'ler için
+  // aeigs:screenshot'ı tetikleyip gerçek ekran görüntüsü serisini yakalamalı.
+  return ok({ recorded: true, action, banned, kicked, banCode, whitelisted, screenshotRequestIds });
 });

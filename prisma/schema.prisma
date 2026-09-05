@@ -221,8 +221,15 @@ model ScreenshotRequest {
   createdAt    DateTime @default(now())
   completedAt  DateTime?
 
+  // Bir CRITICAL tespite/ban'a bağlıysa (otomatik ekran görüntüsü serisi —
+  // "ban anının kanıtı"). Admin'in manuel istediği izleme görüntülerinde null.
+  detectionId  String?
+  detection    Detection? @relation(fields: [detectionId], references: [id], onDelete: SetNull)
+  seq          Int      @default(0)  // seri içindeki sıra (0,1,2,3,4)
+
   @@index([serverId, status])
   @@index([serverId, createdAt])
+  @@index([detectionId])
 }
 
 // Web konsolundan gönderilen komutlar — FiveM kaynağı çeker ve çalıştırır.
@@ -361,6 +368,7 @@ model Detection {
   createdAt  DateTime @default(now())
 
   ban        Ban?
+  screenshots ScreenshotRequest[]
 
   @@index([serverId, type])
   @@index([serverId, createdAt])

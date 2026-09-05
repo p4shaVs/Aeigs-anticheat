@@ -25,6 +25,13 @@ export const GET = handler(
     const replay = parseJson<ReplayFrame[]>(detection.replay, []);
     const details = parseJson<Record<string, unknown>>(detection.details, {});
 
+    // Ban anının kanıtı: gerçek ekran görüntüsü serisi (yüklenmiş olanlar).
+    const screenshots = await db.screenshotRequest.findMany({
+      where: { detectionId: detection.id, status: "DONE" },
+      orderBy: { seq: "asc" },
+      select: { id: true, url: true, seq: true, completedAt: true },
+    });
+
     return ok({
       id: detection.id,
       type: detection.type,
@@ -34,6 +41,7 @@ export const GET = handler(
       createdAt: detection.createdAt.toISOString(),
       details,
       replay,
+      screenshots,
     });
   }
 );
