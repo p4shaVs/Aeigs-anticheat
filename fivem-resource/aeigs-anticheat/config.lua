@@ -52,19 +52,14 @@ Config.AmmoConfirmSamples   = 6
 -- ---------------------------------------------------------------------------
 -- GODMODE 3. KATMAN (server/godmode_guard.lua) — hasar-emilimiyle, flag'e
 -- bakmadan. Mantık: oyuncu vuruluyor ama canı/kalkanı düşmüyorsa = godmode
--- (hangi teknikle yapılırsa yapılsın). Client'taki Katman 1 (aktif test) ve
--- Katman 2 (native bayrak) ile birlikte üç bağımsız yöntem çalışır.
+-- (hangi teknikle yapılırsa yapılsın). Client'taki native bayrak taraması
+-- (client/detections/godmode.lua) ile birlikte iki bağımsız yöntem çalışır.
 -- ---------------------------------------------------------------------------
 Config.GodmodeWindowMs      = 7000   -- değerlendirme penceresi
 Config.GodmodeMinHits       = 5      -- pencerede en az bu kadar isabet
 Config.GodmodeMinDamage     = 150    -- pencerede toplam en az bu kadar amaçlanan hasar
 Config.GodmodeHpTolerance   = 8      -- can bu kadar bile düşmediyse "hiç düşmedi" say
 Config.GodmodeStrikes       = 2      -- kaç pencere üst üste = ban
-
--- Aktif godmode testi (godmode açılınca ~5 sn'de yakalar). Oyuncuya minik
--- test hasarı verip anında geri yükler; SADECE tam canda/güvenli durumda.
--- İstemezseniz false yapın (o zaman sadece pasif hasar-emilimi çalışır).
-Config.GodmodeActiveProbe   = true
 
 -- İzinli kaynaklar dışından spawn olan entity'leri işaretle (protection.lua)
 Config.Debug = false

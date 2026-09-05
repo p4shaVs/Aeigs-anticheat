@@ -1,29 +1,29 @@
--- godmode.lua — Godmode / invincibility, ÇOK KATMANLI (2 yöntem birden)
+-- godmode.lua — Godmode / invincibility (native bayrak taraması)
 --
--- Neden çok katmanlı: hile godmode'u onlarca farklı native/teknikle yapabilir
--- (SetPlayerInvincible, SetEntityInvincible, SetEntityProofs, hasar event'ini
--- client tarafında iptal etme, can/kalkanı sürekli yenileme...). Tek bir
--- native'e bakan tespit kolayca atlatılır. Bu yüzden İKİ BAĞIMSIZ katman var:
+-- GEÇMİŞ HATA (kayda geçsin): Daha önce burada "aktif test" katmanı vardı —
+-- oyuncuya görünmez 5 canlık test hasarı verip can düşmüyorsa godmode
+-- sayıyordu. Bu KALDIRILDI çünkü GERÇEK FALSE BAN'A SEBEP OLDU: FiveM
+-- sunucularının neredeyse tamamında (ESX/QBCore/ox_core fark etmez) başka
+-- resource'lar (hunger/thirst, statusbar, hp senkron döngüleri) oyuncunun
+-- canını kendi tuttuğu değere her tick geri yazar. Testimiz 1-2 kare içinde
+-- can düştü mü diye bakıyordu; o anda başka bir script canı eski değere geri
+-- yazarsa HİÇ HİLE YOKKEN "can düşmedi" görünüp 2 test sonra ban atıyordu.
+-- Bu tek sunucuya özel bir edge-case değil, HER FiveM sunucusunda er ya da
+-- geç gerçek oyuncuları vuracak bir tasarım hatasıydı — bu yüzden tamamen
+-- çıkarıldı. Godmode artık SADECE aşağıdaki iki güvenli yöntemle yakalanır:
 --
---   KATMAN 1 — AKTİF TEST (ground truth, ~5 sn'de yakalar):
---     Oyuncuya güvenli anlarda görünmez, minik (5 can) test hasarı veriyoruz.
---     Godmode NE TEKNİKLE yapılırsa yapılsın "vuruldum ama canım düşmedi"
---     sonucunu verir → yakalanır. 2 test üst üste başarısız olursa BAN.
---     Test hasarı görünmez şekilde anında geri yüklenir (false ban/zarar YOK).
---
---   KATMAN 2 — PASİF NATIVE TARAMASI (yedek/hızlandırıcı, birkaç saniyede):
---     GetPlayerInvincible, GetEntityProofs (bullet/melee), GetPedConfigFlag(6)
---     sürekli true ise ve oyuncu muaf bir durumda DEĞİLSE strike biriktirir.
---     Bu bayraklardan biri tetiklenirse test aralığını kısaltıp Katman 1'i
---     hızlandırır (godmode'u değişik tekniklerle yapan hileler için daha hızlı
---     yakalama), TEK BAŞINA asla ban ATMAZ (yalnızca hızlandırıcı + rapor).
---
--- GÜVENLİK (false ban YOK): sadece tam canda + kalkan yok + güvenli durumda
--- (araç/düşüş/ragdoll/yüzme/tırmanma/paraşüt/cutscene/noclip/spawn/revive/tp
--- DEĞİL) test edilir; test hasarı asla gerçek hasarın üzerine yazmaz.
+--   1) Bu dosya — native bayrak taraması: GetPlayerInvincible / GetEntityProofs
+--      (bullet/melee) / GetPedConfigFlag(6) UZUN SÜRE (25 sn, 6 doğrulama)
+--      kesintisiz true ise ve oyuncu muaf değilse → ban. Uzun pencere, tek
+--      karelik/geçici bir motor durumunun (ör. spawn sırasında GTA'nın kendi
+--      kısa invincible flicker'ı) yanlışlıkla ban atmasını engeller.
+--   2) server/godmode_guard.lua — sunucu tarafı hasar-emilimi: gerçek bir
+--      PvP çatışmasında "vuruldu ama canı düşmedi" (server-authoritative,
+--      client script'lerin senkron döngüleri buraya KARIŞAMAZ, çünkü sunucu
+--      GetEntityHealth'i doğrudan kendisi okur). Değişik tekniklerle yapılan
+--      (bayrak set etmeyen) godmode hileleri PvP sırasında bu katmanla yakalanır.
 
-local probeStrike = Aeigs.strike(2, 15000)
-local flagStrike = Aeigs.strike(4, 20000)   -- yalnızca rapor + hızlandırma
+local flagStrike = Aeigs.strike(6, 25000)
 
 local function exemptState()
   local S = Aeigs.S
@@ -36,20 +36,9 @@ local function exemptState()
   return false
 end
 
-local function safeToProbe()
-  local S = Aeigs.S
-  if exemptState() then return false end
-  local maxHp = S.maxHealth or 200
-  if S.armor ~= 0 then return false end       -- kalkan varsa hasar onu soğurur → false önle
-  if S.health < maxHp then return false end   -- sadece TAM CANDA test et
-  return true, maxHp
-end
-
--- KATMAN 2: pasif native bayrakları (yalnızca hızlandırıcı sinyal)
-local nextProbeAt = 0
 CreateThread(function()
   while true do
-    Wait(1500)
+    Wait(2000)
     if Aeigs.rule('anti_invincibility', true) and Aeigs.active() and not exemptState() then
       local S = Aeigs.S
       local flagged = false
@@ -61,40 +50,10 @@ CreateThread(function()
 
       if flagged then
         if flagStrike:hit() then
-          Aeigs.report('GODMODE', 'HIGH', { source = 'flags', invincible = S.invincible })
+          Aeigs.report('GODMODE', 'CRITICAL', { source = 'flags', invincible = S.invincible })
         end
-        nextProbeAt = 0  -- bayrak varsa aktif testi HEMEN çalıştır (bekletme)
-      end
-    end
-  end
-end)
-
--- KATMAN 1: aktif test — açıldığı anı yakalar
-CreateThread(function()
-  Wait(8000)  -- ilk spawn/yükleme tamamen otursun
-  while true do
-    local interval = (GetGameTimer() >= nextProbeAt) and 0 or 2500
-    Wait(math.max(interval, 300))
-    nextProbeAt = GetGameTimer() + 2500
-
-    if Aeigs.rule('anti_invincibility', true) and Aeigs.active()
-       and (Config == nil or Config.GodmodeActiveProbe ~= false) then
-      local ok, maxHp = safeToProbe()
-      if ok then
-        local ped = Aeigs.S.ped
-        local hp0 = GetEntityHealth(ped)
-        ApplyDamageToPed(ped, 5, false)
-        Wait(0); Wait(0)
-        local hp1 = GetEntityHealth(ped)
-        if hp1 >= hp0 then
-          if probeStrike:hit() then
-            Aeigs.report('GODMODE', 'CRITICAL', { reason = 'probe_absorbed', hp = hp0 })
-          end
-        else
-          -- düştü (normal oyuncu): SADECE test hasarını geri ver, gerçek hasarı bozma
-          local restore = math.min(maxHp, hp1 + 5)
-          if restore > hp1 then SetEntityHealth(ped, restore) end
-        end
+      else
+        flagStrike:resetStrike()
       end
     end
   end

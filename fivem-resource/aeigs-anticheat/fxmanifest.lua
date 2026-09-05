@@ -23,7 +23,7 @@ client_scripts {
   'client/core.lua',              -- paylaşılan durum + yardımcılar (İLK)
   'client/detections/noclip.lua',
   'client/detections/teleport.lua',
-  'client/detections/godmode.lua',        -- godmode Katman 1 (aktif test) + Katman 2 (native bayrak)
+  'client/detections/godmode.lua',        -- godmode: native bayrak taraması (server/godmode_guard.lua ile 2. katman)
   'client/detections/superjump.lua',
   'client/detections/speedhack.lua',
   'client/detections/aimbot.lua',         -- Katman 1 (snap) + Katman 2 (sürekli kilit)

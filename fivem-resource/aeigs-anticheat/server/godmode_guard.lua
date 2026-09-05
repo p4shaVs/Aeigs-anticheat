@@ -1,7 +1,7 @@
 -- godmode_guard.lua — Godmode/health-hack SUNUCU YEDEK katmanı (3. katman)
 --
--- client/detections/godmode.lua'daki aktif test + native bayrak katmanlarına
--- ek olarak, bu SUNUCU TARAFLI katman client'tan tamamen bağımsız çalışır:
+-- client/detections/godmode.lua'daki native bayrak katmanına ek olarak, bu
+-- SUNUCU TARAFLI katman client'tan tamamen bağımsız çalışır:
 -- PvP sırasında biri gerçekten vurulduğu halde canı hiç düşmüyorsa (hangi
 -- teknikle yapılırsa yapılsın) yakalar. Oyuncunun canını DOĞRUDAN sunucu okur
 -- (GetEntityHealth) — client burada yalan söyleyemez.
