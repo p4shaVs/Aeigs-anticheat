@@ -53,11 +53,11 @@ RegisterNetEvent('aeigs:rec:dump', function(frames)
   local saved = SaveResourceFile(RES, fname, encoded, #encoded)
   local path = ('resources/%s/%s'):format(RES, fname)
   if saved then
-    print(('^2[aeigs] KAYIT YAZILDI → %s (%d kare, %d bayt)^7'):format(path, #frames, #encoded))
+    print(('^2[Core Shield] KAYIT YAZILDI → %s (%d kare, %d bayt)^7'):format(path, #frames, #encoded))
     Aeigs.log('INFO', 'recorder', ('Kayıt: %s (%d kare)'):format(fname, #frames))
     TriggerClientEvent('aeigs:notify', src, ('~g~Kayıt yazıldı: %s (%d kare)'):format(fname, #frames))
   else
-    print(('^1[aeigs] KAYIT YAZILAMADI → %s (SaveResourceFile false)^7'):format(path))
+    print(('^1[Core Shield] KAYIT YAZILAMADI → %s (SaveResourceFile false)^7'):format(path))
     TriggerClientEvent('aeigs:notify', src, '~r~Kayıt yazılamadı (dosya).')
   end
 end)

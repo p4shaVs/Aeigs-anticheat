@@ -1,4 +1,4 @@
--- Aeigs Anti-Cheat — oyun içi yönetici menüsü (komut tabanlı) + aksiyon alıcıları
+-- Core Shield Anti-Cheat — oyun içi yönetici menüsü (komut tabanlı) + aksiyon alıcıları
 -- İzinler webden verilir; sunucu her aksiyonda izni doğrular (client sadece arayüz).
 
 local myPerms = {}
@@ -38,7 +38,7 @@ RegisterCommand(Config.AdminCommand or 'ac', function(_, args)
   Wait(150)
   local cmd = args[1]
   if not cmd then
-    local lines = { '~b~— Aeigs Yönetici Menüsü —' }
+    local lines = { '~b~— Core Shield Yönetici Menüsü —' }
     local any = false
     for perm, help in pairs(PERM_HELP) do
       if has(perm) then lines[#lines + 1] = '~w~' .. help; any = true end

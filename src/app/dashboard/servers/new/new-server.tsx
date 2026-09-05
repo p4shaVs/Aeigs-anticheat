@@ -49,10 +49,10 @@ export function NewServerFlow({ appUrl }: { appUrl: string }) {
     }
   }
 
-  // ---- Kurulum ekranı (oluşturulduktan sonra) — Aeigs kendi tarzı ----
+  // ---- Kurulum ekranı (oluşturulduktan sonra) — Core Shield kendi tarzı ----
   if (created) {
     const cfg =
-      `## ─── Aeigs Anti-Cheat ───\n` +
+      `## ─── Core Shield Anti-Cheat ───\n` +
       `set aeigs_api "${apiUrl}"\n` +
       `set aeigs_token "${created.apiToken}"\n` +
       `add_ace resource.aeigs-anticheat command allow\n` +

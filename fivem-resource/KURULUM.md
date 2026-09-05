@@ -1,4 +1,4 @@
-# Aeigs Anti-Cheat — FiveM Kurulum & Kullanım (Yerel)
+# Core Shield Anti-Cheat — FiveM Kurulum & Kullanım (Yerel)
 
 Bu rehber, web panelini FiveM sunucuna **yerelde** bağlamayı anlatır. Sonunda:
 oyuncular (license + discord) panelde görünür, web'den ban/kick/uyarı oyunda
@@ -32,7 +32,7 @@ Panelde **Sunucularım → Sunucu Ekle**. Açılan formda:
 klasörüne kopyala (izleme için `screenshot-basic` de). Panelin verdiği bloğu
 `server.cfg`'ye yapıştır:
 ```cfg
-## ─── Aeigs Anti-Cheat ───
+## ─── Core Shield Anti-Cheat ───
 set aeigs_api   "http://PANEL_ADRESI/api/v1"
 set aeigs_token "aeigs_srv_BURAYA_TOKEN"
 add_ace resource.aeigs-anticheat command allow   # konsol/kick/kaynak komutları için

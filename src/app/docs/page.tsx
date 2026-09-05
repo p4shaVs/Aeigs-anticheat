@@ -21,7 +21,7 @@ export default function DocsPage() {
         <span className="section-title text-brand-400">Dokümantasyon</span>
         <h1 className="mt-3 text-4xl font-bold tracking-tight text-white">Başlangıç</h1>
         <p className="mt-4 text-slate-400">
-          Aeigs Anti-Cheat&apos;i sunucuna kurmak ve API&apos;yi kullanmak için rehber.
+          Core Shield Anti-Cheat&apos;i sunucuna kurmak ve API&apos;yi kullanmak için rehber.
         </p>
 
         <section className="mt-12">

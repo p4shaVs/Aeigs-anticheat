@@ -1,4 +1,4 @@
-# Aeigs Anti-Cheat
+# Core Shield Anti-Cheat
 
 FiveM için **SaaS anti-cheat** platformu: web panel (Next.js) + lisans/key sistemi +
 FiveM Lua resource (client tespitleri + sunucu korumaları). Panelden kurallar açılır,

@@ -1,4 +1,4 @@
--- Aeigs Anti-Cheat — sunucu taraflı korumalar
+-- Core Shield Anti-Cheat — sunucu taraflı korumalar
 -- Panelden açılan "Güvenlik Kuralları" (heartbeat config.rules) burada okunur.
 -- Başlangıç için çoğu kural RAPOR eder (report-only). Engellemeyi (CancelEvent)
 -- açmak isterseniz ilgili yerdeki yorumu aktifleştirin — önce test edin.
@@ -314,13 +314,13 @@ AddEventHandler('aeigs:serverReport', function(src, dtype, severity, details)
     if data.banned then
       fireScreenshotBurst(src, data.screenshotRequestIds, function()
         if GetPlayerName(src) then
-          DropPlayer(src, ('[Aeigs] Yasaklandınız | Sebep: %s | Ban Kodu: %s')
+          DropPlayer(src, ('[Core Shield] Yasaklandınız | Sebep: %s | Ban Kodu: %s')
             :format(tostring(dtype or ''), data.banCode or '—'))
         end
       end)
       if Aeigs.refreshBans then Aeigs.refreshBans() end
     elseif data.kicked then
-      DropPlayer(src, ('[Aeigs] Kicklendiniz | Sebep: %s'):format(tostring(dtype or '')))
+      DropPlayer(src, ('[Core Shield] Kicklendiniz | Sebep: %s'):format(tostring(dtype or '')))
     end
   end)
   Aeigs.log('DETECTION', 'anticheat', ('%s → %s'):format(dtype, name(src)))

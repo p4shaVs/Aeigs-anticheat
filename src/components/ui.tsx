@@ -27,7 +27,7 @@ export function Logo({
       {withText && (
         <span className="flex flex-col leading-none">
           <span className="text-[15px] font-bold tracking-tight text-white">
-            Aeigs
+            Core Shield
           </span>
           <span className="text-[10px] font-medium uppercase tracking-[0.2em] text-brand-300/80">
             Anti-Cheat

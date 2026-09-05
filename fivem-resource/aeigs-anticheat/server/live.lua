@@ -1,4 +1,4 @@
--- Aeigs Anti-Cheat — canlı özellikler modülü
+-- Core Shield Anti-Cheat — canlı özellikler modülü
 -- Konum/can/kalkan aktarımı, bypass (whitelist), kara liste (blacklist),
 -- yönetici listesi + izinler, ekran görüntüsü ve oyun içi yönetici aksiyonları.
 
@@ -87,7 +87,7 @@ function Aeigs.enforceBlacklist(owner, entry, model)
     details = { model = entry.model, action = entry.action },
   }, nil)
   if entry.action == 'KICK' then
-    DropPlayer(owner, ('[Aeigs] Yasaklı %s kullanımı: %s'):format(entry.kind, entry.model))
+    DropPlayer(owner, ('[Core Shield] Yasaklı %s kullanımı: %s'):format(entry.kind, entry.model))
   elseif entry.action == 'BAN' then
     Aeigs.request('/ingame-action', 'POST', {
       type = 'BAN', reason = ('Kara liste: %s (%s)'):format(entry.model, entry.kind),
@@ -95,7 +95,7 @@ function Aeigs.enforceBlacklist(owner, entry, model)
     }, function(ok, data)
       if Aeigs.refreshBans then Aeigs.refreshBans() end
       local code = (ok and data and data.banCode) or '—'
-      DropPlayer(owner, ('[Aeigs] Yasaklandınız | Yasaklı %s: %s | Ban Kodu: %s')
+      DropPlayer(owner, ('[Core Shield] Yasaklandınız | Yasaklı %s: %s | Ban Kodu: %s')
         :format(entry.kind, entry.model, code))
     end)
   end
@@ -202,7 +202,7 @@ RegisterNetEvent('aeigs:adminAction', function(action, targetId, arg)
       type = 'KICK', reason = arg or 'Yönetici', by = adminName,
       license = Aeigs.getIdents(target).license, playerName = nameOf(target),
     }, nil)
-    DropPlayer(target, ('[Aeigs] Kicklendiniz | %s'):format(arg or 'Yönetici'))
+    DropPlayer(target, ('[Core Shield] Kicklendiniz | %s'):format(arg or 'Yönetici'))
   elseif action == 'ban' and target then
     local tids = Aeigs.getIdents(target)
     Aeigs.request('/ingame-action', 'POST', {
@@ -211,7 +211,7 @@ RegisterNetEvent('aeigs:adminAction', function(action, targetId, arg)
     }, function(ok, data)
       if Aeigs.refreshBans then Aeigs.refreshBans() end
       local code = (ok and data and data.banCode) or '—'
-      DropPlayer(target, ('[Aeigs] Yasaklandınız | %s | Ban Kodu: %s'):format(arg or 'Yönetici', code))
+      DropPlayer(target, ('[Core Shield] Yasaklandınız | %s | Ban Kodu: %s'):format(arg or 'Yönetici', code))
     end)
   elseif action == 'warn' and target then
     Aeigs.request('/ingame-action', 'POST', {

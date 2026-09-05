@@ -90,13 +90,13 @@ export async function sendWebhook(
     }
 
     const payload = {
-      username: "Aeigs Anti-Cheat",
+      username: "Core Shield Anti-Cheat",
       embeds: [
         {
           title: `${meta.emoji} ${meta.title}`,
           color: meta.color,
           fields: embedFields,
-          footer: { text: `${serverName} • Aeigs` },
+          footer: { text: `${serverName} • Core Shield` },
           timestamp: new Date().toISOString(),
         },
       ],

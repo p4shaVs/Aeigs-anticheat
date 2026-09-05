@@ -10,11 +10,11 @@ const ITEMS = [
     a: "Lisansını etkinleştirip kaynağı (resource) sunucuna ekliyorsun, config'e API adresi ve token'ını giriyorsun. Sunucuyu başlatınca panelde çevrimiçi görünüyor — ortalama 5 dakika.",
   },
   {
-    q: "Aeigs Anti-Cheat sunucu performansımı etkiler mi?",
+    q: "Core Shield Anti-Cheat sunucu performansımı etkiler mi?",
     a: "Hayır. Optimize edilmiş sunucu taraflı yapı ile 5ms altı işlem süresi hedeflenir; sunucuna minimum yük bindirir.",
   },
   {
-    q: "Aeigs hangi tür hileleri tespit edebilir?",
+    q: "Core Shield hangi tür hileleri tespit edebilir?",
     a: "Aimbot, silent aim, overlay/ESP, godmode, spoofer, illegal weapon/vehicle/object spawn, resource injection, event exploit ve daha fazlası — hem imza hem davranış tabanlı.",
   },
   {
@@ -30,7 +30,7 @@ const ITEMS = [
     a: "Yeni hile ve exploit'lere karşı düzenli güncellemeler yayınlarız; kritik durumlarda anında yama geçeriz.",
   },
   {
-    q: "Aeigs her FiveM framework'ü ile uyumlu mu?",
+    q: "Core Shield her FiveM framework'ü ile uyumlu mu?",
     a: "Evet. ESX, QBCore, QBox ve standalone dahil yaygın framework'lerle uyumlu çalışır.",
   },
   {

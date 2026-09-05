@@ -100,7 +100,7 @@ export function SiteFooter() {
           </div>
         </div>
         <div className="mt-10 flex flex-col items-center justify-between gap-3 border-t border-white/5 pt-6 text-xs text-slate-600 sm:flex-row">
-          <p>© {new Date().getFullYear()} Aeigs Anti-Cheat. Tüm hakları saklıdır.</p>
+          <p>© {new Date().getFullYear()} Core Shield Anti-Cheat. Tüm hakları saklıdır.</p>
           <p>FiveM, Cfx.re'nin ticari markasıdır. Bu proje bağımsızdır.</p>
         </div>
       </div>

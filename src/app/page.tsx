@@ -34,7 +34,7 @@ function Hero() {
       <div className="mx-auto grid max-w-6xl items-center gap-10 px-4 pb-24 pt-16 sm:px-6 lg:grid-cols-2 lg:pt-24">
         <div>
           <h1 className="animate-slide-up text-5xl font-extrabold leading-[1.05] tracking-tight text-white sm:text-6xl">
-            Aeigs{" "}
+            Core Shield{" "}
             <span className="bg-gradient-to-r from-brand-400 via-brand-300 to-accent-violet bg-clip-text text-transparent">
               Anti-Cheat
             </span>
@@ -169,7 +169,7 @@ function WebPanelMock() {
       <div className="mb-3 flex items-center justify-between">
         <div>
           <div className="text-[11px] font-semibold text-white">Server</div>
-          <div className="text-[9px] text-slate-500">FiveM server protected by Aeigs</div>
+          <div className="text-[9px] text-slate-500">FiveM server protected by Core Shield</div>
         </div>
         <div className="flex gap-4 text-right">
           <div><div className="text-sm font-bold text-white">282</div><div className="text-[8px] text-slate-500">AVG</div></div>

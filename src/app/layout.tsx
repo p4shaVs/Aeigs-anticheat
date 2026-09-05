@@ -19,12 +19,12 @@ const jakarta = localFont({
 
 export const metadata: Metadata = {
   title: {
-    default: "Aeigs Anti-Cheat — FiveM için Yeni Nesil Koruma",
-    template: "%s · Aeigs Anti-Cheat",
+    default: "Core Shield Anti-Cheat — FiveM için Yeni Nesil Koruma",
+    template: "%s · Core Shield Anti-Cheat",
   },
   description:
     "FiveM sunucunuz için gelişmiş anti-cheat, web paneli ve lisans yönetimi. Aimbot, silent aim ve exploit koruması; canlı harita, ban/kick yönetimi ve daha fazlası.",
-  applicationName: "Aeigs Anti-Cheat",
+  applicationName: "Core Shield Anti-Cheat",
   keywords: ["fivem", "anticheat", "anti-cheat", "aeigs", "fivem panel"],
   robots: { index: true, follow: true },
 };

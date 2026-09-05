@@ -28,7 +28,7 @@ function Aeigs.request(path, method, body, cb)
     local okFlag = status >= 200 and status < 300 and parsed and parsed.ok
     if cb then cb(okFlag == true, parsed and parsed.data or nil, status) end
     if not okFlag and Config.Debug then
-      print(('[aeigs] %s %s -> %s %s'):format(method, path, status, resText or ''))
+      print(('[Core Shield] %s %s -> %s %s'):format(method, path, status, resText or ''))
     end
   end, method, data, headers())
 end

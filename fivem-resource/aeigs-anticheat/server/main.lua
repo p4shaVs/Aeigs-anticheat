@@ -1,4 +1,4 @@
--- Aeigs Anti-Cheat — sunucu ana betiği
+-- Core Shield Anti-Cheat — sunucu ana betiği
 -- Panelle konuşur: heartbeat, oyuncu senkronizasyonu, ban kontrolü,
 -- ceza/komut/kaynak kuyruğu tüketimi, log gönderimi.
 
@@ -184,14 +184,14 @@ local function applyAction(a)
     if src then
       TriggerClientEvent('chat:addMessage', src, {
         color = { 255, 200, 0 },
-        args = { '[Aeigs]', ('⚠ Uyarı: %s'):format(a.reason or '') },
+        args = { '[Core Shield]', ('⚠ Uyarı: %s'):format(a.reason or '') },
       })
     end
   elseif a.type == 'KICK' then
-    if src then DropPlayer(src, ('[Aeigs] Kicklendiniz | Sebep: %s'):format(a.reason or '')) end
+    if src then DropPlayer(src, ('[Core Shield] Kicklendiniz | Sebep: %s'):format(a.reason or '')) end
   elseif a.type == 'BAN' then
     if src then
-      DropPlayer(src, ('[Aeigs] Yasaklandınız | Sebep: %s | Ban Kodu: %s')
+      DropPlayer(src, ('[Core Shield] Yasaklandınız | Sebep: %s | Ban Kodu: %s')
         :format(a.reason or '', a.banCode or '—'))
     end
     refreshBans()
@@ -310,13 +310,13 @@ RegisterNetEvent('aeigs:report', function(dtype, severity, details)
     if data.banned then
       fireScreenshotBurst(src, data.screenshotRequestIds, function()
         if GetPlayerName(src) then
-          DropPlayer(src, ('[Aeigs] Yasaklandınız | Sebep: %s | Ban Kodu: %s')
+          DropPlayer(src, ('[Core Shield] Yasaklandınız | Sebep: %s | Ban Kodu: %s')
             :format(tostring(dtype or ''), data.banCode or '—'))
         end
       end)
       refreshBans()
     elseif data.kicked then
-      DropPlayer(src, ('[Aeigs] Kicklendiniz | Sebep: %s'):format(tostring(dtype or '')))
+      DropPlayer(src, ('[Core Shield] Kicklendiniz | Sebep: %s'):format(tostring(dtype or '')))
     end
   end)
 end)
@@ -327,10 +327,10 @@ end)
 
 CreateThread(function()
   if not Config.Token or Config.Token == '' then
-    print('^1[aeigs] UYARI: aeigs_token ayarlanmadı. server.cfg içine token ekleyin.^7')
+    print('^1[Core Shield] UYARI: aeigs_token ayarlanmadı. server.cfg içine token ekleyin.^7')
     return
   end
-  print('^2[aeigs] Anti-Cheat başlatıldı. Panele bağlanılıyor...^7')
+  print('^2[Core Shield] Anti-Cheat başlatıldı. Panele bağlanılıyor...^7')
   refreshBans()
   heartbeat()
   syncResources()

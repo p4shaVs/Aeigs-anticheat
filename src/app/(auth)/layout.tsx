@@ -43,7 +43,7 @@ export default function AuthLayout({
         </div>
 
         <p className="relative text-xs text-slate-600">
-          © {new Date().getFullYear()} Aeigs Anti-Cheat
+          © {new Date().getFullYear()} Core Shield Anti-Cheat
         </p>
       </div>
 

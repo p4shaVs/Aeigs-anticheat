@@ -1,4 +1,4 @@
--- Aeigs Anti-Cheat — client: canlı veri + ekran görüntüsü + yetkili ışınlama
+-- Core Shield Anti-Cheat — client: canlı veri + ekran görüntüsü + yetkili ışınlama
 -- (Tespitler client/detections/*.lua içindedir. Bu dosya tespit YAPMAZ.)
 
 local function currentActivity(ped)

@@ -2,8 +2,8 @@ fx_version 'cerulean'
 game 'gta5'
 
 name 'aeigs-anticheat'
-author 'Aeigs'
-description 'Aeigs Anti-Cheat — kapsamlı FiveM koruması + web panel entegrasyonu'
+author 'Core Shield'
+description 'Core Shield Anti-Cheat — kapsamlı FiveM koruması + web panel entegrasyonu'
 version '0.5.0'
 
 -- Sunucu tarafı: API entegrasyonu, kuyruk tüketimi, koruma kancaları

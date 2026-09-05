@@ -1,4 +1,4 @@
--- Aeigs Anti-Cheat — client çekirdeği (paylaşılan durum + yardımcılar)
+-- Core Shield Anti-Cheat — client çekirdeği (paylaşılan durum + yardımcılar)
 -- Tüm tespit modülleri (client/detections/*.lua) bunu kullanır.
 -- Amaç: tek yerde durum önbelleği + rapor + kural + strike + legit-muafiyet
 -- + "ped değişti" (multichar/respawn) tespiti + ban-anı replay tamponu.
@@ -185,4 +185,4 @@ RegisterNetEvent('aeigs:weaponBlacklist', function(list)
 end)
 CreateThread(function() Wait(2600); TriggerServerEvent('aeigs:requestWeaponBlacklist') end)
 
-print('^2[aeigs] client çekirdeği yüklendi^7')
+print('^2[Core Shield] client çekirdeği yüklendi^7')
