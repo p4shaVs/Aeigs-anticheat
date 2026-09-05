@@ -4,7 +4,7 @@ game 'gta5'
 name 'aeigs-anticheat'
 author 'Aeigs'
 description 'Aeigs Anti-Cheat — web panel entegrasyonu (heartbeat, oyuncu senk., ban/kick, konsol, kaynaklar, loglar)'
-version '0.1.0'
+version '0.2.0'
 
 -- Sunucu tarafı: API entegrasyonu, kuyruk tüketimi, koruma kancaları
 server_scripts {
@@ -13,7 +13,7 @@ server_scripts {
   'server/main.lua',
   'server/live.lua',
   'server/protection.lua',
-  'server/damage_sentinel.lua',   -- godmode/health hack (hasar-emilimi, false'suz)
+  'server/godmode_guard.lua',   -- godmode 3. katman: hasar-emilimi (false'suz)
   'server/recorder.lua',
 }
 
@@ -23,15 +23,14 @@ client_scripts {
   'client/core.lua',              -- paylaşılan durum + yardımcılar (İLK)
   'client/detections/noclip.lua',
   'client/detections/teleport.lua',
-  'client/detections/godmode.lua',
-  'client/detections/godmode_probe.lua', -- godmode'u açıldığı an yakalar (aktif test)
+  'client/detections/godmode.lua',        -- godmode Katman 1 (aktif test) + Katman 2 (native bayrak)
   'client/detections/superjump.lua',
   'client/detections/speedhack.lua',
-  'client/detections/aimbot.lua',
+  'client/detections/aimbot.lua',         -- Katman 1 (snap) + Katman 2 (sürekli kilit)
   'client/detections/silentaim.lua',
   'client/detections/weapons.lua',
   'client/detections/extras.lua',
-  'client/detections/recorder.lua', -- hile test/debug kaydedici (yetkili)
+  'client/detections/recorder.lua', -- hile test/debug kaydedici
   'client/main.lua',              -- konum/ekran görüntüsü (tespit değil)
   'client/admin.lua',             -- oyun içi yönetici menüsü
 }

@@ -1,34 +1,19 @@
--- damage_sentinel.lua (sunucu) — Godmode / Health hack (GENEL, false'suz)
+-- godmode_guard.lua — Godmode/health-hack SUNUCU YEDEK katmanı (3. katman)
 --
--- NEDEN: Test kayıtları (aeigs_rec_*) godmode açıkken bile client'ta
---   invincible=false, health=197, armor=99 gösterdi. Yani hile ne
---   GetPlayerInvincible'ı tetikliyor ne de değeri yasal sınırın üstüne
---   çıkarıyor → değere/flag'e bakan tespit KÖR. Tek gerçek sinyal:
---   "oyuncu gerçekten vuruldu ama canı/kalkanı düşmedi".
---
--- NASIL: weaponDamageEvent bir OYUNCUYU hedef aldığında, sunucu o oyuncunun
---   ped canını DOĞRUDAN okur (GetEntityHealth — client sahtekârlık yapamaz).
---   Kısa bir pencerede (7 sn) toplam amaçlanan hasar >=150 ve isabet >=5
---   olmasına rağmen can HİÇ düşmediyse (<=8) ve kalkan da düşmediyse →
---   imkânsız → godmode/health-hack. Tek fluke ban atmasın diye 2 pencere strike.
---
--- Bu yöntem hileyi NASIL yaptığından bağımsızdır (SetEntityInvincible,
---   hasar iptali, anlık can/kalkan yenileme — hepsi "vuruldu ama düşmedi"
---   sonucunu verir), o yüzden bu tek hileye değil TÜM godmode/health
---   hilelerine karşı çalışır.
+-- client/detections/godmode.lua'daki aktif test + native bayrak katmanlarına
+-- ek olarak, bu SUNUCU TARAFLI katman client'tan tamamen bağımsız çalışır:
+-- PvP sırasında biri gerçekten vurulduğu halde canı hiç düşmüyorsa (hangi
+-- teknikle yapılırsa yapılsın) yakalar. Oyuncunun canını DOĞRUDAN sunucu okur
+-- (GetEntityHealth) — client burada yalan söyleyemez.
 
 local function ruleOn(key)
   local r = Aeigs.getRules()
   return r[key] == true
 end
 
-local function name(src) return GetPlayerName(src) or ('Player#' .. src) end
-
--- Ped entity'sinden oyuncu server id'sini bul
 local function playerFromPed(ped)
   local owner = NetworkGetEntityOwner(ped)
   if owner and owner > 0 and GetPlayerName(owner) then return owner end
-  -- yedek: ped == oyuncu ped'i mi diye tara
   for _, pid in ipairs(GetPlayers()) do
     pid = tonumber(pid)
     if pid and GetPlayerPed(pid) == ped then return pid end
@@ -36,13 +21,10 @@ local function playerFromPed(ped)
   return nil
 end
 
--- victim server id → pencere durumu
-local win = {}       -- [vid] = { accum, hits, first, hpMin, dead }
+local win = {}       -- [vid] = { accum, hits, first, hpStart, hpMin }
 local strikes = {}   -- [vid] = strike sayısı
 
-local function reset(vid)
-  win[vid] = nil
-end
+local function reset(vid) win[vid] = nil end
 
 AddEventHandler('weaponDamageEvent', function(sender, data)
   if not ruleOn('anti_invincibility') then return end
@@ -61,16 +43,13 @@ AddEventHandler('weaponDamageEvent', function(sender, data)
       if vid and not (Aeigs.isWhitelisted and Aeigs.isWhitelisted(vid)) then
         local ped = GetPlayerPed(vid)
         if ped and ped ~= 0 then
-          -- Araçtaysa atla (hasar araca gidebilir → false önle)
-          if GetVehiclePedIsIn(ped, false) ~= 0 then goto next end
-          local hp = GetEntityHealth(ped)
+          if GetVehiclePedIsIn(ped, false) ~= 0 then goto next end  -- hasar araca gidebilir
           local armor = GetPedArmour(ped)
-          -- Kalkan varsa ve emiyorsa: bu hit meşru soğurulmuş olabilir → sıfırla
-          if armor and armor > 0 then reset(vid); goto next end
+          if armor and armor > 0 then reset(vid); goto next end     -- kalkan = meşru soğurma
+          local hp = GetEntityHealth(ped)
           if hp and hp > 0 then
             local w = win[vid]
             if not w or (now - w.first) > (Config.GodmodeWindowMs or 7000) then
-              -- yeni pencere: referans = ilk isabetteki can
               w = { accum = 0, hits = 0, first = now, hpStart = hp, hpMin = hp }
               win[vid] = w
             end
@@ -78,7 +57,6 @@ AddEventHandler('weaponDamageEvent', function(sender, data)
             w.hits = w.hits + 1
             if hp < w.hpMin then w.hpMin = hp end
 
-            -- Değerlendir: bol hasar + çok isabet ama can pencere boyunca HİÇ düşmedi
             local tol = Config.GodmodeHpTolerance or 8
             if w.hits >= (Config.GodmodeMinHits or 5)
               and w.accum >= (Config.GodmodeMinDamage or 150)
@@ -88,8 +66,7 @@ AddEventHandler('weaponDamageEvent', function(sender, data)
               if strikes[vid] >= (Config.GodmodeStrikes or 2) then
                 strikes[vid] = 0
                 TriggerEvent('aeigs:serverReport', vid, 'GODMODE', 'CRITICAL', {
-                  reason = 'damage_absorbed',
-                  hits = w.hits, dmg = math.floor(w.accum), hp = hp,
+                  reason = 'server_damage_absorbed', hits = w.hits, dmg = math.floor(w.accum), hp = hp,
                 })
               end
             end
@@ -106,7 +83,6 @@ AddEventHandler('playerDropped', function()
   win[s] = nil; strikes[s] = nil
 end)
 
--- Ölen oyuncunun strike/pencere durumunu temizle (godmode kapalı → ölebilir)
 CreateThread(function()
   while true do
     Wait(3000)

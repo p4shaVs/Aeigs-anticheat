@@ -28,6 +28,16 @@ CreateThread(function()
   end
 end)
 
+-- Hafif "çarpışma durumu" sinyali (~800ms) — sunucunun TELEPORT taraması
+-- büyük bir sıçramayı NOCLIP'e mi yoksa gerçek ışınlanmaya mı bağlayacağını
+-- bilsin diye. 3 sn'lik konum beacon'ından daha sık, çok ucuz (tek bool).
+CreateThread(function()
+  while true do
+    Wait(800)
+    TriggerServerEvent('aeigs:collState', GetEntityCollisionDisabled(PlayerPedId()))
+  end
+end)
+
 -- (Yetkili ışınlama alıcısı client/admin.lua'da; teleport tespitini muaf tutar.)
 
 -- İzleme / ekran görüntüsü (screenshot-basic)

@@ -1,6 +1,7 @@
 -- Aeigs Anti-Cheat — client çekirdeği (paylaşılan durum + yardımcılar)
 -- Tüm tespit modülleri (client/detections/*.lua) bunu kullanır.
--- Amaç: tek yerde durum önbelleği + rapor + kural + strike + legit-muafiyet.
+-- Amaç: tek yerde durum önbelleği + rapor + kural + strike + legit-muafiyet
+-- + "ped değişti" (multichar/respawn) tespiti + ban-anı replay tamponu.
 
 Aeigs = Aeigs or {}
 Aeigs.Rules = Aeigs.Rules or {}
@@ -17,14 +18,44 @@ function Aeigs.rule(key, def)
   return v == true
 end
 
---- Tespiti sunucuya raporla (throttle ile). severity CRITICAL → oto-ban akışı.
+-- ---------------------------------------------------------------------------
+-- Ban-anı REPLAY tamponu — CRITICAL bir tespit atıldığında son ~8 sn'lik
+-- durum web panelde "neden banlandık" izlenebilsin diye rapora eklenir.
+-- ---------------------------------------------------------------------------
+local REPLAY_MAX = 32   -- 32 * 250ms ≈ 8 sn
+local replayBuf = {}
+
+local function pushReplay(S)
+  if not S.ped then return end
+  replayBuf[#replayBuf + 1] = {
+    t = GetGameTimer(),
+    x = math.floor(S.coords.x * 10) / 10, y = math.floor(S.coords.y * 10) / 10, z = math.floor(S.coords.z * 10) / 10,
+    speed = math.floor(S.speed * 10) / 10, vz = math.floor((S.vel and S.vel.z or 0) * 100) / 100,
+    hp = S.health, armor = S.armor, coll = S.collisionOff, inVeh = S.inVeh,
+  }
+  if #replayBuf > REPLAY_MAX then table.remove(replayBuf, 1) end
+end
+
+--- Şu ana kadarki replay tamponunun bir kopyasını döndürür (raporla birlikte gider).
+function Aeigs.dumpReplay()
+  local out = {}
+  for i = 1, #replayBuf do out[i] = replayBuf[i] end
+  return out
+end
+
+--- Tespiti sunucuya raporla (throttle ile). severity CRITICAL → oto-ban akışı;
+--- CRITICAL raporlara otomatik replay tamponu eklenir.
 local lastReport = {}
 function Aeigs.report(dtype, severity, details, throttle)
   local now = GetGameTimer()
   throttle = throttle or 15000
   if lastReport[dtype] and now - lastReport[dtype] < throttle then return end
   lastReport[dtype] = now
-  TriggerServerEvent('aeigs:report', dtype, severity or 'HIGH', details or {})
+  details = details or {}
+  if severity == 'CRITICAL' and type(details) == 'table' then
+    details.replay = Aeigs.dumpReplay()
+  end
+  TriggerServerEvent('aeigs:report', dtype, severity or 'HIGH', details)
 end
 
 -- ---------------------------------------------------------------------------
@@ -43,26 +74,35 @@ function Aeigs.spectateGrace() return GetGameTimer() < Aeigs.grace.spectate end
 exports('markTeleport', function() Aeigs.markTp() end)  -- legit tp yapan scriptler çağırır
 exports('markRevive', function() Aeigs.markRevive() end)
 
--- Oyuncu GERÇEKTEN dünyada mı? Menü/yükleme/karakter seçimi sırasında HİÇBİR
--- tespit çalışmaz (giriş sırasında invincible olmak vb. false ban yapmasın).
-Aeigs.spawned = false
-AddEventHandler('playerSpawned', function()
+--- Oyuncu (yeniden) spawn oldu: menü/multichar/ölüp-dirilme/karakter değişimi.
+--- HER durumda çağrılır — framework'e bağlı değildir (aşağıdaki ped-değişim
+--- taramasından tetiklenir). Tüm tespitleri geçici olarak durdurur ve
+--- SUNUCUYA bildirir ki teleport taraması eski konumla kıyaslama yapıp
+--- "multichar/respawn = TELEPORT ban" hatasına düşmesin.
+local function onRespawn()
   Aeigs.spawned = true
-  Aeigs.grace.spawn = GetGameTimer() + 12000
+  Aeigs.grace.spawn = GetGameTimer() + 10000
   Aeigs.markTp()
-end)
+  Aeigs.markRevive()
+  replayBuf = {}
+  TriggerServerEvent('aeigs:respawnAnchor')
+end
+Aeigs.onRespawn = onRespawn
+
+Aeigs.spawned = false
+AddEventHandler('playerSpawned', onRespawn)
 CreateThread(function()
   while not Aeigs.spawned do
-    Wait(1000)
+    Wait(500)
     if NetworkIsSessionStarted() then
       local ped = PlayerPedId()
       if ped and ped ~= 0 and DoesEntityExist(ped) and not IsEntityDead(ped) and GetEntityHealth(ped) > 0 then
-        Aeigs.spawned = true
-        Aeigs.grace.spawn = GetGameTimer() + 12000  -- ilk spawn sonrası 12 sn daha muaf
+        onRespawn()
       end
     end
   end
 end)
+
 --- Tespitler yalnızca oyuncu gerçekten oyundayken ve spawn muafiyeti bittikten sonra çalışır.
 function Aeigs.active() return Aeigs.spawned and not Aeigs.spawnGuard() end
 RegisterNetEvent('aeigs:grantTp', function() Aeigs.markTp() end)  -- sunucu admin tp
@@ -82,18 +122,27 @@ function Aeigs.strike(needed, windowMs)
       if self.n >= self.needed then self.n = 0; return true end
       return false
     end,
+    resetStrike = function(self) self.n = 0 end,
   }
 end
 
 -- ---------------------------------------------------------------------------
--- Paylaşılan durum önbelleği (200 ms) — natives tek yerde okunur
+-- Paylaşılan durum önbelleği (200 ms) — natives tek yerde okunur.
+-- Ped HANDLE'ı değiştiğinde (multichar / respawn / yeni ped) otomatik
+-- onRespawn() tetiklenir — framework'e bağlı olmadan çalışır.
 -- ---------------------------------------------------------------------------
 local S = {}
 Aeigs.S = S
+local lastPed = nil
 
 CreateThread(function()
   while true do
     local ped = PlayerPedId()
+    if lastPed ~= nil and ped ~= lastPed then
+      onRespawn()
+    end
+    lastPed = ped
+
     S.ped = ped
     S.id = PlayerId()
     S.coords = GetEntityCoords(ped)
@@ -120,6 +169,9 @@ CreateThread(function()
     S.health = GetEntityHealth(ped)
     S.maxHealth = GetEntityMaxHealth(ped)
     S.weapon = GetSelectedPedWeapon(ped)
+
+    if Aeigs.active() then pushReplay(S) end
+
     Wait(200)
   end
 end)

@@ -2,6 +2,11 @@ import { NextRequest, NextResponse } from "next/server";
 import { db } from "@/lib/db";
 import { createSession } from "@/lib/session";
 
+// force-dynamic: bu route DB'ye bağlanır. Olmadan Next.js build sırasında
+// statik render denemek için çağırır → DB yoksa (veya build ortamında
+// erişilemezse, ör. Netlify) build "collect page data" adımında ÇÖKER.
+export const dynamic = "force-dynamic";
+
 // Tek tıkla demo girişi: demo hesabıyla oturum açar ve panele yönlendirir.
 // (electron-services'teki "Demo" akışının karşılığı)
 export async function GET(req: NextRequest) {

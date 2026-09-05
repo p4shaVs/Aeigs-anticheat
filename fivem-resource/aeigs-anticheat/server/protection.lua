@@ -129,11 +129,18 @@ AddEventHandler('weaponDamageEvent', function(sender, data)
           if dist > 5.0 then
             dir = dir / dist
             local dot = aim.fwd.x * dir.x + aim.fwd.y * dir.y + aim.fwd.z * dir.z
-            if dot < 0.5 then  -- >60° sapma: nişan almadığın oyuncuyu vurdun
+            if dot < 0.15 then
+              -- Nişan hedefte HİÇ değilken (>81° sapma — ör. yere bakarken
+              -- kafadan vuruş) hit gitmesi fiziksel olarak imkânsız: tek
+              -- seferde ban (kullanıcı isteği: "aim hedefte değilken bile
+              -- ateş açılıp hit gidiyorsa hemen banla").
+              TriggerEvent('aeigs:serverReport', src, 'SILENT_AIM', 'CRITICAL', { angleCos = math.floor(dot * 100) / 100, confirm = 1 })
+            elseif dot < 0.5 then
+              -- Orta derece sapma (~60-81°) — 2 doğrulama ile false önle
               silentStrike[src] = (silentStrike[src] or 0) + 1
               if silentStrike[src] >= 2 then
                 silentStrike[src] = 0
-                TriggerEvent('aeigs:serverReport', src, 'SILENT_AIM', 'CRITICAL', { angleCos = math.floor(dot * 100) / 100 })
+                TriggerEvent('aeigs:serverReport', src, 'SILENT_AIM', 'CRITICAL', { angleCos = math.floor(dot * 100) / 100, confirm = 2 })
               end
             end
           end
@@ -201,10 +208,16 @@ AddEventHandler('aeigs:serverReport', function(src, dtype, severity, details)
     license = ids.license,
     details = details or {},
   }, function(ok, data)
-    if ok and data and data.banned and GetPlayerName(src) then
+    if not (ok and data and GetPlayerName(src)) then return end
+    -- Aksiyon panelden (Yapılandırma → Aksiyonlar) tespit tipi bazında seçilir:
+    -- LOG (yalnızca kaydet) / KICK (at) / BAN (yasakla). Karar web API'sinde
+    -- server.config.actions'a göre verilir; burada sadece uygulanır.
+    if data.banned then
       DropPlayer(src, ('[Aeigs] Yasaklandınız | Sebep: %s | Ban Kodu: %s')
         :format(tostring(dtype or ''), data.banCode or '—'))
       if Aeigs.refreshBans then Aeigs.refreshBans() end
+    elseif data.kicked then
+      DropPlayer(src, ('[Aeigs] Kicklendiniz | Sebep: %s'):format(tostring(dtype or '')))
     end
   end)
   Aeigs.log('DETECTION', 'anticheat', ('%s → %s'):format(dtype, name(src)))

@@ -50,11 +50,10 @@ Config.ExplosiveBulletMax   = 4
 Config.AmmoConfirmSamples   = 6
 
 -- ---------------------------------------------------------------------------
--- HASAR SENTINEL — Godmode / Health hack (flag'e bakmadan, hasar-emilimiyle)
--- Mantık: oyuncu vuruluyor ama canı/kalkanı düşmüyorsa = godmode. Kayıtlar
--- gösterdi ki hile GetPlayerInvincible'ı TETİKLEMİYOR; tek gerçek "vuruldu ama
--- can düşmedi". Bu yüzden yasal maksimumun (health<=200, armor<=100) altındaki
--- boost'lar bile burada yakalanır. YANLIŞ POZİTİFİ önlemek için yüksek eşik.
+-- GODMODE 3. KATMAN (server/godmode_guard.lua) — hasar-emilimiyle, flag'e
+-- bakmadan. Mantık: oyuncu vuruluyor ama canı/kalkanı düşmüyorsa = godmode
+-- (hangi teknikle yapılırsa yapılsın). Client'taki Katman 1 (aktif test) ve
+-- Katman 2 (native bayrak) ile birlikte üç bağımsız yöntem çalışır.
 -- ---------------------------------------------------------------------------
 Config.GodmodeWindowMs      = 7000   -- değerlendirme penceresi
 Config.GodmodeMinHits       = 5      -- pencerede en az bu kadar isabet

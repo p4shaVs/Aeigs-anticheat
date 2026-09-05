@@ -323,6 +323,10 @@ model Ban {
   unbannedAt  DateTime?
   unbannedBy  String?
 
+  // Bu banı tetikleyen tespit — "neden banlandık" replay'i izlemek için.
+  detectionId String?     @unique
+  detection   Detection?  @relation(fields: [detectionId], references: [id])
+
   @@index([serverId, active])
   @@index([license])
 }
@@ -352,7 +356,13 @@ model Detection {
   severity   String   @default("MEDIUM") // LOW | MEDIUM | HIGH | CRITICAL
   playerName String
   details    String   @default("{}") // JSON
+  // Ban anından önceki ~8 sn'lik durum tamponu (JSON dizi) — web panelde
+  // "neden banlandık" replay'i için. Yalnızca CRITICAL raporlarda dolu gelir.
+  replay     String   @default("[]")
+  action     String?  // bu tespit için fiilen uygulanan aksiyon: LOG | KICK | BAN
   createdAt  DateTime @default(now())
+
+  ban        Ban?
 
   @@index([serverId, type])
   @@index([serverId, createdAt])

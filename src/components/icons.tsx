@@ -262,6 +262,17 @@ export const Icons = {
       <path d="M12 7v5l3 2" />
     </Base>
   ),
+  play: (p: IconProps) => (
+    <Base {...p}>
+      <path d="M6 4v16l14-8Z" />
+    </Base>
+  ),
+  pause: (p: IconProps) => (
+    <Base {...p}>
+      <rect x="6" y="4" width="4" height="16" rx="1" />
+      <rect x="14" y="4" width="4" height="16" rx="1" />
+    </Base>
+  ),
 };
 
 export type IconName = keyof typeof Icons;

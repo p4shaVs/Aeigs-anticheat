@@ -253,11 +253,15 @@ RegisterNetEvent('aeigs:report', function(dtype, severity, details)
     license = ids.license,
     details = type(details) == 'table' and details or { info = tostring(details or '') },
   }, function(ok, data)
-    -- Otomatik ban geldiyse oyuncuyu anında at (noclip/superjump/teleport dahil).
-    if ok and data and data.banned and GetPlayerName(src) then
+    if not (ok and data and GetPlayerName(src)) then return end
+    -- Aksiyon (LOG/KICK/BAN) panelden tespit tipi bazında seçilir; karar
+    -- web API'sinde verilir (server.config.actions), burada uygulanır.
+    if data.banned then
       DropPlayer(src, ('[Aeigs] Yasaklandınız | Sebep: %s | Ban Kodu: %s')
         :format(tostring(dtype or ''), data.banCode or '—'))
       refreshBans()
+    elseif data.kicked then
+      DropPlayer(src, ('[Aeigs] Kicklendiniz | Sebep: %s'):format(tostring(dtype or '')))
     end
   end)
 end)

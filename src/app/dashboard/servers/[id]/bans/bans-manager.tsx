@@ -5,6 +5,7 @@ import { useRouter } from "next/navigation";
 import { Badge, EmptyState } from "@/components/ui";
 import { Icons } from "@/components/icons";
 import { formatDateTime, relativeDays, cn } from "@/lib/utils";
+import { ReplayViewer } from "./replay-viewer";
 
 export interface BanRow {
   id: string;
@@ -20,6 +21,7 @@ export interface BanRow {
   expiresAt: string | null;
   active: boolean;
   permanent: boolean;
+  detectionId: string | null;
 }
 
 function CopyChip({ label, value }: { label: string; value: string | null }) {
@@ -44,6 +46,7 @@ export function BansManager({ serverId, bans }: { serverId: string; bans: BanRow
   const [query, setQuery] = useState("");
   const [tab, setTab] = useState<"all" | "active" | "inactive">("all");
   const [busy, setBusy] = useState<string | null>(null);
+  const [replayFor, setReplayFor] = useState<string | null>(null);
 
   const filtered = useMemo(() => {
     const q = query.trim().toLowerCase();
@@ -160,19 +163,32 @@ export function BansManager({ serverId, bans }: { serverId: string; bans: BanRow
                       <Badge tone="gray">Kaldırıldı</Badge>
                     )}
                   </td>
-                  <td className="px-4 py-3 text-right">
-                    {b.active ? (
-                      <button onClick={() => unban(b.id)} disabled={busy === b.id}
-                        className="rounded-lg border border-white/10 px-3 py-1.5 text-xs font-medium text-slate-300 transition hover:border-emerald-500/40 hover:text-emerald-300">
-                        {busy === b.id ? "…" : "Banı Kaldır"}
-                      </button>
-                    ) : <span className="text-xs text-slate-600">—</span>}
+                  <td className="px-4 py-3">
+                    <div className="flex items-center justify-end gap-2">
+                      {b.detectionId && (
+                        <button onClick={() => setReplayFor(b.detectionId)}
+                          title="Ban anını izle (son ~8 sn)"
+                          className="flex items-center gap-1 rounded-lg border border-white/10 px-2.5 py-1.5 text-xs font-medium text-slate-300 transition hover:border-brand-500/40 hover:text-brand-300">
+                          <Icons.eye size={13} /> İzle
+                        </button>
+                      )}
+                      {b.active ? (
+                        <button onClick={() => unban(b.id)} disabled={busy === b.id}
+                          className="rounded-lg border border-white/10 px-3 py-1.5 text-xs font-medium text-slate-300 transition hover:border-emerald-500/40 hover:text-emerald-300">
+                          {busy === b.id ? "…" : "Banı Kaldır"}
+                        </button>
+                      ) : (!b.detectionId && <span className="text-xs text-slate-600">—</span>)}
+                    </div>
                   </td>
                 </tr>
               ))}
             </tbody>
           </table>
         </div>
+      )}
+
+      {replayFor && (
+        <ReplayViewer serverId={serverId} detectionId={replayFor} onClose={() => setReplayFor(null)} />
       )}
     </div>
   );

@@ -41,6 +41,7 @@ export default async function BansPage({
     expiresAt: b.expiresAt ? b.expiresAt.toISOString() : null,
     active: b.active,
     permanent: b.permanent,
+    detectionId: b.detectionId,
   }));
 
   return <BansManager serverId={server.id} bans={rows} />;

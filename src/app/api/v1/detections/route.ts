@@ -8,9 +8,11 @@ import { generateBanCode } from "@/lib/keys";
 import { parseJson } from "@/lib/utils";
 import { isWhitelisted } from "@/lib/bypass";
 import { sendWebhook } from "@/lib/discord";
+import { sanitizeActions, resolveAction } from "@/lib/detection-actions";
 
-// Kaynak, bir hile tespitini raporlar. severity CRITICAL ve lisansta auto_ban
-// açıksa otomatik ban oluşturulur ve kaynağa "ban" komutu döndürülür.
+// Kaynak, bir hile tespitini raporlar. Aksiyon (LOG/KICK/BAN) müşterinin
+// Yapılandırma → Aksiyonlar sayfasında tespit tipi bazında seçtiği değerdir.
+// CRITICAL raporlar "replay" (ban-anı son ~8 sn) taşıyabilir — panelde izlenir.
 const schema = z.object({
   type: z.string().max(40),
   severity: z.enum(["LOW", "MEDIUM", "HIGH", "CRITICAL"]).default("MEDIUM"),
@@ -32,14 +34,20 @@ export const POST = handler(async (req: NextRequest) => {
       })
     : null;
 
-  await db.detection.create({
+  // Replay tamponu (varsa) ayrı sakla; details'te tekrar etmesin.
+  const rawDetails = { ...(body.details ?? {}) } as Record<string, unknown>;
+  const replay = Array.isArray(rawDetails.replay) ? rawDetails.replay : [];
+  delete rawDetails.replay;
+
+  const detection = await db.detection.create({
     data: {
       serverId: server.id,
       playerId: player?.id,
       type: body.type,
       severity: body.severity,
       playerName: body.playerName,
-      details: JSON.stringify(body.details ?? {}),
+      details: JSON.stringify(rawDetails),
+      replay: JSON.stringify(replay),
     },
   });
 
@@ -61,7 +69,7 @@ export const POST = handler(async (req: NextRequest) => {
     });
   }
 
-  // Bypass (whitelist) kontrolü — muaf oyuncular otomatik banlanmaz.
+  // Bypass (whitelist) kontrolü — muaf oyuncular ne kick ne ban yer.
   const whitelisted = player
     ? await isWhitelisted(server.id, {
         license: player.license,
@@ -71,7 +79,6 @@ export const POST = handler(async (req: NextRequest) => {
       })
     : false;
 
-  // Detection webhook'u (bypass'lı oyuncu için de bildirilir ama ban atılmaz)
   void sendWebhook(server.config, "detection", server.name, {
     player: body.playerName,
     reason: `${body.type} (${body.severity})${whitelisted ? " — BYPASS'LI" : ""}`,
@@ -80,73 +87,97 @@ export const POST = handler(async (req: NextRequest) => {
       : undefined,
   });
 
-  // Otomatik ban değerlendirmesi
-  const features = parseJson<string[]>(
-    (server as any).licenseKey?.features ?? "[]",
-    []
-  );
-  const eligible =
-    body.severity === "CRITICAL" && features.includes("auto_ban") && !!player && !whitelisted;
+  // ---------------------------------------------------------------------
+  // Aksiyon kararı: müşterinin Yapılandırma → Aksiyonlar'da tespit tipi
+  // bazında seçtiği LOG / KICK / BAN. Ayar yoksa tipin varsayılanı kullanılır.
+  // ---------------------------------------------------------------------
+  const config = parseJson<Record<string, unknown>>(server.config, {});
+  const actions = sanitizeActions(config.actions);
+  let action = resolveAction(actions, body.type, body.severity);
 
-  // Tekrarlı ban engeli: oyuncunun zaten aktif bir banı varsa yeni ban atma.
-  // (noclip + teleport + superjump aynı anda geldiğinde 3 ban oluşmasını önler.)
-  let existingBan: { code: string | null } | null = null;
-  if (eligible && player) {
-    existingBan = await db.ban.findFirst({
+  // BAN, lisansın "auto_ban" özelliğine bağlıdır (paket/monetizasyon); yoksa
+  // KICK'e düşer (LOG kararıysa LOG kalır).
+  const features = parseJson<string[]>((server as any).licenseKey?.features ?? "[]", []);
+  if (action === "BAN" && !features.includes("auto_ban")) action = "KICK";
+  if (whitelisted || !player) action = "LOG";
+
+  let banned = false;
+  let kicked = false;
+  let banCode: string | null = null;
+
+  if (action === "BAN" && player) {
+    // Tekrarlı ban engeli: oyuncunun zaten aktif banı varsa yeni ban açma.
+    const existingBan = await db.ban.findFirst({
       where: { serverId: server.id, playerId: player.id, active: true },
       select: { code: true },
     });
-  }
+    if (existingBan) {
+      banned = true;
+      banCode = existingBan.code;
+    } else {
+      banCode = generateBanCode();
+      await db.$transaction([
+        db.ban.create({
+          data: {
+            serverId: server.id,
+            playerId: player.id,
+            detectionId: detection.id,
+            code: banCode,
+            license: player.license,
+            steam: player.steam,
+            discord: player.discord,
+            ip: player.ip,
+            playerName: player.name,
+            reason: `Otomatik ban: ${body.type}`,
+            bannedBy: "AntiCheat",
+            active: true,
+            permanent: true,
+          },
+        }),
+        db.punishAction.create({
+          data: {
+            serverId: server.id,
+            playerId: player.id,
+            type: "BAN",
+            reason: `Otomatik ban: ${body.type}`,
+            issuedBy: "AntiCheat",
+            playerName: player.name,
+            status: "PENDING",
+          },
+        }),
+        db.player.update({
+          where: { id: player.id },
+          data: { online: false, trustScore: 0 },
+        }),
+      ]);
+      banned = true;
 
-  const autoBan = eligible && player && !existingBan;
-  let banCode: string | null = existingBan?.code ?? null;
-
-  if (autoBan && player) {
-    banCode = generateBanCode();
-    await db.$transaction([
-      db.ban.create({
-        data: {
-          serverId: server.id,
-          playerId: player.id,
-          code: banCode,
-          license: player.license,
-          steam: player.steam,
-          discord: player.discord,
-          ip: player.ip,
-          playerName: player.name,
-          reason: `Otomatik ban: ${body.type}`,
-          bannedBy: "AntiCheat",
-          active: true,
-          permanent: true,
-        },
-      }),
-      // Kuyruğa BAN aksiyonu ekle — kaynak pollActions ile oyuncuyu anında atar.
-      db.punishAction.create({
-        data: {
-          serverId: server.id,
-          playerId: player.id,
-          type: "BAN",
-          reason: `Otomatik ban: ${body.type}`,
-          issuedBy: "AntiCheat",
-          playerName: player.name,
-          status: "PENDING",
-        },
-      }),
-      db.player.update({
-        where: { id: player.id },
-        data: { online: false, trustScore: 0 },
-      }),
-    ]);
-
-    void sendWebhook(server.config, "autoban", server.name, {
-      player: player.name,
-      reason: body.type,
-      code: banCode,
-      by: "AntiCheat",
-      identifiers: { license: player.license, discord: player.discord, steam: player.steam, ip: player.ip },
+      void sendWebhook(server.config, "autoban", server.name, {
+        player: player.name,
+        reason: body.type,
+        code: banCode,
+        by: "AntiCheat",
+        identifiers: { license: player.license, discord: player.discord, steam: player.steam, ip: player.ip },
+      });
+    }
+  } else if (action === "KICK" && player) {
+    kicked = true;
+    await db.punishAction.create({
+      data: {
+        serverId: server.id,
+        playerId: player.id,
+        type: "KICK",
+        reason: `Otomatik kick: ${body.type}`,
+        issuedBy: "AntiCheat",
+        playerName: player.name,
+        status: "DELIVERED",
+        deliveredAt: new Date(),
+      },
     });
   }
 
-  // banned=true → kaynak bu oyuncuyu (yeni ban ya da mevcut ban) hemen atmalı.
-  return ok({ recorded: true, autoBan: !!autoBan, banned: eligible && !!player, banCode, whitelisted });
+  await db.detection.update({ where: { id: detection.id }, data: { action } });
+
+  // banned/kicked=true → kaynak oyuncuyu hemen atmalı.
+  return ok({ recorded: true, action, banned, kicked, banCode, whitelisted });
 });

@@ -117,6 +117,17 @@ RegisterNetEvent('aeigs:pos', function(d)
   }
 end)
 
+-- Hafif "çarpışma kapalı mı" sinyali (~800ms, client/main.lua). TELEPORT
+-- taramasının NoClip'le karışmaması (yanlış sebep) için kullanılır.
+local CollState = {}  -- src -> { on, t }
+RegisterNetEvent('aeigs:collState', function(collisionOff)
+  CollState[source] = { on = collisionOff == true, t = GetGameTimer() }
+end)
+local function recentlyNoclip(src, withinMs)
+  local c = CollState[src]
+  return c ~= nil and c.on and (GetGameTimer() - c.t) < (withinMs or 4000)
+end
+
 local function flushPositions()
   local list = {}
   for _, v in pairs(PosBuffer) do list[#list + 1] = v end
@@ -277,20 +288,37 @@ RegisterNetEvent('aeigs:screenshotResult', function(reqId, url, adminId)
 end)
 
 -- ---------------------------------------------------------------------------
--- SUNUCU TARAFLI TELEPORT TESPİTİ (kandırılamaz)
--- Sunucu, oyuncunun koordinatını doğrudan okur. İki örnek arasındaki hız
--- HİÇBİR aracın/uçağın ulaşamayacağı bir değeri (400 m/s) aşarsa = teleport.
--- Böylece "Teleport to Waypoint" gibi harita ışınlamaları kesin yakalanır ve
--- normal hareket/araç/uçak ASLA yanlış-pozitif vermez.
+-- SUNUCU TARAFLI TELEPORT TESPİTİ (kandırılamaz) — NoClip/multichar/respawn'dan
+-- AYRIŞTIRILMIŞ. Sunucu oyuncunun koordinatını doğrudan okur; iki örnek
+-- arasında yaya >60 m/s, araç >250 m/s = fiziksel olarak imkânsız = teleport.
+--
+-- ÜÇ MUAFİYET/AYRIŞTIRMA (false ban'ların asıl kaynağıydı):
+--   1) "Yeni giriş" muafiyeti (playerJoining) — ilk yükleme.
+--   2) "Ped değişti" muafiyeti (aeigs:respawnAnchor, client/core.lua) —
+--      MULTICHAR karakter seçimi / ölüp-dirilme / framework respawn'ı ne
+--      zaman olursa olsun konum çapası SIFIRLANIR, eski konumla kıyaslanmaz.
+--      → "oyuna girer girmez / karakter seçince teleport banı" biter.
+--   3) NoClip ayrışması — sıçrama anında oyuncunun çarpışması kapalıysa
+--      (aeigs:collState) bu TELEPORT değil NOCLIP'tir; doğru sebeple ve
+--      kendi (client) NoClip tespitine bırakılır — sunucu sadece o an
+--      hiç tetiklenmemişse yedek/geç bir NOCLIP raporu düşürür, TELEPORT
+--      ATMAZ. → "noclip açan teleporttan yanlış sebeple banlanıyor" biter.
 -- ---------------------------------------------------------------------------
-local sPos = {}          -- src -> { x,y,z, t }
-local tpGrace = {}       -- src -> muafiyet bitiş ms (yetkili ışınlama/yeni giriş)
+local sPos = {}          -- src -> { x,y,z, t, seen }
+local tpGrace = {}       -- src -> muafiyet bitiş ms (yetkili ışınlama/yeni giriş/respawn)
+local noclipFallbackStrike = {}  -- src -> strike sayacı (NoClip yedek raporu)
 
 function Aeigs.grantTp(src)
   tpGrace[tonumber(src)] = GetGameTimer() + 8000
 end
 
-local TP_MAX_SPEED = 400.0  -- m/s (en hızlı jet ~150; 400 fiziksel olarak imkânsız)
+--- Client'ta ped handle'ı değişti (multichar/respawn/ölüp-dirilme). Konum
+--- çapasını sıfırla ki eski konumla kıyaslanıp TELEPORT atılmasın.
+RegisterNetEvent('aeigs:respawnAnchor', function()
+  local src = source
+  sPos[src] = nil
+  Aeigs.grantTp(src)
+end)
 
 local function teleportScan()
   local now = GetGameTimer()
@@ -312,16 +340,26 @@ local function teleportScan()
         else
           local dt = (now - prev.t) / 1000.0
           local dist = #(c - vector3(prev.x, prev.y, prev.z))
-          local settled = (now - prev.seen) > 20000        -- girişten 20 sn sonra
+          local settled = (now - prev.seen) > 20000        -- girişten/respawn'dan 20 sn sonra
           local granted = tpGrace[src] and now < tpGrace[src]
-          -- Yaya: >60 m/s imkânsız; araç/uçak: >250 m/s imkânsız. Böylece kısa
-          -- mesafeli ışınlama da yakalanır, hızlı araç/uçak yolculuğu FALSE vermez.
           local inVeh = GetVehiclePedIsIn(ped, false) ~= 0
           local perSec = dt > 0 and (dist / dt) or 0
           local limit = inVeh and 250.0 or 60.0
           if settled and not granted and dist > 40.0 and perSec > limit
               and not (Aeigs.isWhitelisted and Aeigs.isWhitelisted(src)) then
-            TriggerEvent('aeigs:serverReport', src, 'TELEPORT', 'CRITICAL', { distance = math.floor(dist) })
+            if recentlyNoclip(src) then
+              -- Bu bir sıçrama değil NoClip uçuşu — TELEPORT atma. Client'ın
+              -- kendi NoClip tespiti zaten ~2 sn içinde doğru sebeple banlar;
+              -- o çalışmadıysa (devre dışı bırakılmış olabilir) yedek olarak
+              -- birkaç kez üst üste görülünce sunucu NOCLIP diye raporlar.
+              noclipFallbackStrike[src] = (noclipFallbackStrike[src] or 0) + 1
+              if noclipFallbackStrike[src] >= 3 then
+                noclipFallbackStrike[src] = 0
+                TriggerEvent('aeigs:serverReport', src, 'NOCLIP', 'CRITICAL', { source = 'server_fallback' })
+              end
+            else
+              TriggerEvent('aeigs:serverReport', src, 'TELEPORT', 'CRITICAL', { distance = math.floor(dist) })
+            end
             sPos[src].seen = now + 5000  -- kısa süre tekrar tetiklenmesin
           end
           prev.x, prev.y, prev.z, prev.t = c.x, c.y, c.z, now
@@ -332,7 +370,11 @@ local function teleportScan()
   -- ayrılanları temizle
   local online = {}
   for _, sid in ipairs(GetPlayers()) do online[tonumber(sid)] = true end
-  for k in pairs(sPos) do if not online[k] then sPos[k] = nil; tpGrace[k] = nil end end
+  for k in pairs(sPos) do
+    if not online[k] then
+      sPos[k] = nil; tpGrace[k] = nil; noclipFallbackStrike[k] = nil; CollState[k] = nil
+    end
+  end
 end
 
 AddEventHandler('playerJoining', function()
