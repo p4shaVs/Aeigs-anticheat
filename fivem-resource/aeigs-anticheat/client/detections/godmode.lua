@@ -1,27 +1,27 @@
--- godmode.lua — Godmode / invincibility (native bayrak taraması)
+-- godmode.lua — Godmode / invincibility, client tarafı bayrak taraması
+-- ARTIK SADECE RAPOR (ban ATMAZ) — bkz. aşağıdaki iki geçmiş hata.
 --
--- GEÇMİŞ HATA (kayda geçsin): Daha önce burada "aktif test" katmanı vardı —
--- oyuncuya görünmez 5 canlık test hasarı verip can düşmüyorsa godmode
--- sayıyordu. Bu KALDIRILDI çünkü GERÇEK FALSE BAN'A SEBEP OLDU: FiveM
--- sunucularının neredeyse tamamında (ESX/QBCore/ox_core fark etmez) başka
--- resource'lar (hunger/thirst, statusbar, hp senkron döngüleri) oyuncunun
--- canını kendi tuttuğu değere her tick geri yazar. Testimiz 1-2 kare içinde
--- can düştü mü diye bakıyordu; o anda başka bir script canı eski değere geri
--- yazarsa HİÇ HİLE YOKKEN "can düşmedi" görünüp 2 test sonra ban atıyordu.
--- Bu tek sunucuya özel bir edge-case değil, HER FiveM sunucusunda er ya da
--- geç gerçek oyuncuları vuracak bir tasarım hatasıydı — bu yüzden tamamen
--- çıkarıldı. Godmode artık SADECE aşağıdaki iki güvenli yöntemle yakalanır:
+-- GEÇMİŞ HATA #1: Aktif self-damage testi vardı — KALDIRILDI, çünkü başka
+-- resource'ların (hunger/thirst, statusbar) can senkron döngüleri testi
+-- her seferinde geçersiz kılıp hiç hile yokken ban atıyordu.
 --
---   1) Bu dosya — native bayrak taraması: GetPlayerInvincible / GetEntityProofs
---      (bullet/melee) / GetPedConfigFlag(6) UZUN SÜRE (25 sn, 6 doğrulama)
---      kesintisiz true ise ve oyuncu muaf değilse → ban. Uzun pencere, tek
---      karelik/geçici bir motor durumunun (ör. spawn sırasında GTA'nın kendi
---      kısa invincible flicker'ı) yanlışlıkla ban atmasını engeller.
---   2) server/godmode_guard.lua — sunucu tarafı hasar-emilimi: gerçek bir
---      PvP çatışmasında "vuruldu ama canı düşmedi" (server-authoritative,
---      client script'lerin senkron döngüleri buraya KARIŞAMAZ, çünkü sunucu
---      GetEntityHealth'i doğrudan kendisi okur). Değişik tekniklerle yapılan
---      (bayrak set etmeyen) godmode hileleri PvP sırasında bu katmanla yakalanır.
+-- GEÇMİŞ HATA #2 (BUNU BULDURAN sorun): GetPlayerInvincible + GetPedConfigFlag(6)
+-- bayrak taraması "uzun süre kesintisiz true" olursa TEK BAŞINA ban atıyordu.
+-- Ama ESX/QBCore gibi framework'ler spawn/karakter yüklenirken oyuncuyu
+-- KENDİLERİ invincible yapıyor ve bu koruma bizim 10 sn'lik muafiyetimizden
+-- DAHA UZUN sürebiliyor (15-30 sn yaygın) — bu da "her girişte godmode banı"
+-- olarak ortaya çıktı. GetPedConfigFlag(6)'nın da her oyuncuda normalde
+-- true olabileceği doğrulanamadı (riskli/dokümante edilmemiş native).
+--
+-- SONUÇ: Client tarafında hiçbir bayrak/flag TEK BAŞINA artık ban atamaz.
+-- Godmode'un GERÇEK ve TEK ban-atabilen yöntemi artık server/godmode_guard.lua
+-- — biri GERÇEKTEN vurulup canı hiç düşmüyorsa (server'ın kendi okuduğu
+-- GetEntityHealth ile) banlar. Bu, spawn/framework durumlarından TAMAMEN
+-- bağımsızdır çünkü gerçek bir vuruş (weaponDamageEvent) gerektirir — kimse
+-- sana ateş etmeden asla tetiklenmez.
+--
+-- Bu dosya sadece HIGH önemde rapor bırakır (panelde görünür, ban yok);
+-- ban kararını tamamen server/godmode_guard.lua verir.
 
 local flagStrike = Aeigs.strike(6, 25000)
 
@@ -45,12 +45,13 @@ CreateThread(function()
       if S.invincible then flagged = true end
       local ok1, bulletProof, _, _, _, meleeProof = pcall(GetEntityProofs, S.ped)
       if ok1 and (bulletProof or meleeProof) then flagged = true end
-      local ok2, cfg6 = pcall(GetPedConfigFlag, S.ped, 6, true)
-      if ok2 and cfg6 then flagged = true end
 
       if flagged then
         if flagStrike:hit() then
-          Aeigs.report('GODMODE', 'CRITICAL', { source = 'flags', invincible = S.invincible })
+          -- SADECE RAPOR — ban atmaz. Panelde görünür, incelemek isteyen
+          -- yönetici manuel aksiyon alabilir (Aksiyonlar sayfasından BAN'a
+          -- çevirmek istersen kendi riskindir, framework'ünü tanıyorsundur).
+          Aeigs.report('GODMODE', 'HIGH', { source = 'flags', invincible = S.invincible })
         end
       else
         flagStrike:resetStrike()

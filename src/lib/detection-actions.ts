@@ -91,14 +91,31 @@ export function fallbackActionForSeverity(severity: string): DetectionAction {
   return "LOG";
 }
 
-/** Bir tespit tipi + severity için nihai aksiyonu çözer (config > tip varsayılanı > severity). */
+/**
+ * Seçilen aksiyonu severity'ye göre tavanlar (GÜVENLİK KEMERİ).
+ * Müşteri bir tespit tipi için "BAN" seçmiş olsa bile, o anki rapor CRITICAL
+ * değilse ban ATILMAZ — en fazla KICK (HIGH'ta), aksi halde LOG. Böylece bir
+ * tespit dosyasının "sadece rapor" niyetiyle HIGH/MEDIUM göndermesi, o tipin
+ * varsayılan aksiyonu BAN diye YANLIŞLIKLA banlamaz. Tespit dosyaları CRITICAL
+ * göndermeye karar verdiğinde (gerçekten kanıtlanmış anda) ban devreye girer.
+ */
+function capBySeverity(action: DetectionAction, severity: string): DetectionAction {
+  if (action === "BAN") return severity === "CRITICAL" ? "BAN" : capBySeverity("KICK", severity);
+  if (action === "KICK") return severity === "HIGH" || severity === "CRITICAL" ? "KICK" : "LOG";
+  return "LOG";
+}
+
+/** Bir tespit tipi + severity için nihai aksiyonu çözer (config > tip varsayılanı > severity, sonra severity tavanı). */
 export function resolveAction(
   actions: Record<string, DetectionAction>,
   type: string,
   severity: string
 ): DetectionAction {
-  if (actions[type]) return actions[type];
-  const def = DETECTION_TYPES.find((d) => d.type === type);
-  if (def) return def.defaultAction;
-  return fallbackActionForSeverity(severity);
+  let action: DetectionAction;
+  if (actions[type]) action = actions[type];
+  else {
+    const def = DETECTION_TYPES.find((d) => d.type === type);
+    action = def ? def.defaultAction : fallbackActionForSeverity(severity);
+  }
+  return capBySeverity(action, severity);
 }

@@ -1,10 +1,11 @@
--- godmode_guard.lua — Godmode/health-hack SUNUCU YEDEK katmanı (3. katman)
+-- godmode_guard.lua — Godmode/health-hack, ANA YÖNTEM (sunucu tarafı)
 --
--- client/detections/godmode.lua'daki native bayrak katmanına ek olarak, bu
--- SUNUCU TARAFLI katman client'tan tamamen bağımsız çalışır:
--- PvP sırasında biri gerçekten vurulduğu halde canı hiç düşmüyorsa (hangi
--- teknikle yapılırsa yapılsın) yakalar. Oyuncunun canını DOĞRUDAN sunucu okur
--- (GetEntityHealth) — client burada yalan söyleyemez.
+-- Mantık basit: biri GERÇEKTEN vuruluyor (weaponDamageEvent) ama canı hiç
+-- düşmüyorsa = godmode, hangi teknikle yapılırsa yapılsın. Oyuncunun canını
+-- DOĞRUDAN sunucu okur (GetEntityHealth) — client script'ler burada yalan
+-- söyleyemez / araya giremez (bu yüzden client'ta çalışan yöntemlerden daha
+-- güvenilir). client/detections/godmode.lua (native bayrak taraması) ikinci,
+-- destekleyici bir katmandır.
 
 local function ruleOn(key)
   local r = Aeigs.getRules()

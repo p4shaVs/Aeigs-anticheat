@@ -50,16 +50,18 @@ Config.ExplosiveBulletMax   = 4
 Config.AmmoConfirmSamples   = 6
 
 -- ---------------------------------------------------------------------------
--- GODMODE 3. KATMAN (server/godmode_guard.lua) — hasar-emilimiyle, flag'e
--- bakmadan. Mantık: oyuncu vuruluyor ama canı/kalkanı düşmüyorsa = godmode
--- (hangi teknikle yapılırsa yapılsın). Client'taki native bayrak taraması
--- (client/detections/godmode.lua) ile birlikte iki bağımsız yöntem çalışır.
+-- GODMODE — ANA YÖNTEM: server/godmode_guard.lua (hasar-emilimi, flag'e
+-- bakmadan). Mantık: oyuncu GERÇEKTEN vuruluyor (weaponDamageEvent, sunucu
+-- kendi doğrudan GetEntityHealth okur) ama canı hiç düşmüyorsa = godmode —
+-- hangi teknikle yapılırsa yapılsın, client script'ler bu kararı etkileyemez.
+-- Client'taki native bayrak taraması (client/detections/godmode.lua) ikinci,
+-- destekleyici bir yöntemdir.
 -- ---------------------------------------------------------------------------
-Config.GodmodeWindowMs      = 7000   -- değerlendirme penceresi
-Config.GodmodeMinHits       = 5      -- pencerede en az bu kadar isabet
-Config.GodmodeMinDamage     = 150    -- pencerede toplam en az bu kadar amaçlanan hasar
-Config.GodmodeHpTolerance   = 8      -- can bu kadar bile düşmediyse "hiç düşmedi" say
-Config.GodmodeStrikes       = 2      -- kaç pencere üst üste = ban
+Config.GodmodeWindowMs      = 6000   -- değerlendirme penceresi
+Config.GodmodeMinHits       = 3      -- pencerede en az bu kadar GERÇEK isabet
+Config.GodmodeMinDamage     = 80     -- pencerede toplam en az bu kadar amaçlanan hasar
+Config.GodmodeHpTolerance   = 5      -- can bu kadar bile düşmediyse "hiç düşmedi" say
+Config.GodmodeStrikes       = 1      -- tek pencere yeterli (server-authoritative, hızlı ban)
 
 -- İzinli kaynaklar dışından spawn olan entity'leri işaretle (protection.lua)
 Config.Debug = false
