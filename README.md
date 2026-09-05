@@ -4,8 +4,9 @@ FiveM için **SaaS anti-cheat** platformu: web panel (Next.js) + lisans/key sist
 FiveM Lua resource (client tespitleri + sunucu korumaları). Panelden kurallar açılır,
 key üretilir, sunucular yönetilir; oyun içinde hileler tespit edilip otomatik banlanır.
 
-> **Kısa yol:** Yayınlama için [`NETLIFY-DEPLOY.md`](./NETLIFY-DEPLOY.md).
+> **Kısa yol:** Kurulum için [Hızlı başlangıç](#4-hızlı-başlangıç-lokal) bölümü.
 > FiveM resource kurulumu için [FiveM Resource](#7-fivem-resource-kurulumu) bölümü.
+> Şu an **yerel/tek makine** kurulumu için yapılandırılmış (SQLite, `npm run dev`).
 
 ---
 
@@ -23,8 +24,7 @@ key üretilir, sunucular yönetilir; oyun içinde hileler tespit edilip otomatik
 11. [Hile test/kayıt modu](#11-hile-testkayıt-modu)
 12. [REST API (v1) referansı](#12-rest-api-v1-referansı)
 13. [Güvenlik notları](#13-güvenlik-notları)
-14. [Yayınlama (Netlify)](#14-yayınlama-netlify)
-15. [Sık sorunlar](#15-sık-sorunlar)
+14. [Sık sorunlar](#14-sık-sorunlar)
 
 ---
 
@@ -35,7 +35,7 @@ key üretilir, sunucular yönetilir; oyun içinde hileler tespit edilip otomatik
 │  FiveM Sunucusu  │  ─────────────────────────────────►    │   Web Panel (Next)  │
 │  aeigs-anticheat │   heartbeat / players / detections      │   /api/v1/*  (REST) │
 │  (Lua resource)  │  ◄─────────────────────────────────    │                     │
-│                  │   pending actions / commands / rules    │   Prisma ← Postgres │
+│                  │   pending actions / commands / rules    │   Prisma ← SQLite   │
 └──────────────────┘                                         └─────────────────────┘
         ▲                                                              ▲
         │ oyun içi tespitler (client/detections/*.lua)                │ panel (owner/admin)
@@ -45,7 +45,7 @@ key üretilir, sunucular yönetilir; oyun içinde hileler tespit edilip otomatik
 - **Client Lua** her hileyi ayrı dosyada tespit eder → sunucuya raporlar.
 - **Server Lua** olay-tabanlı korumalar (silah/patlama/silent aim/godmode) + panele köprü.
 - **Web panel** kuralları/keyleri/banları yönetir; `/api/v1` üzerinden resource ile konuşur.
-- **DB (Postgres)** kullanıcı, lisans, sunucu, oyuncu, ban, tespit, log, denetim kayıtlarını tutar.
+- **DB (SQLite)** kullanıcı, lisans, sunucu, oyuncu, ban, tespit, log, denetim kayıtlarını tutar.
 
 ---
 
@@ -55,7 +55,7 @@ key üretilir, sunucular yönetilir; oyun içinde hileler tespit edilip otomatik
 |--------|-----------|
 | Web framework | Next.js 14 (App Router) |
 | Dil | TypeScript, React 18 |
-| DB / ORM | PostgreSQL + Prisma 5 |
+| DB / ORM | SQLite + Prisma 5 |
 | Kimlik doğrulama | Kendi JWT'si (`jose`) + `bcryptjs` (parola) |
 | Doğrulama | `zod` |
 | Grafik/3D | `recharts`, `three` (3D harita) |
@@ -92,10 +92,8 @@ Aeigs-anticheat/
 │  │  └─ admin.lua           # oyun içi /ac menüsü
 │  └─ server/
 │     ├─ http.lua main.lua live.lua protection.lua
-│     ├─ damage_sentinel.lua # godmode/health hack (hasar-emilimi)
+│     ├─ godmode_guard.lua   # godmode 3. katman (server tarafı hasar-emilimi)
 │     └─ recorder.lua        # hile test kaydı
-├─ netlify.toml
-├─ NETLIFY-DEPLOY.md
 └─ README.md
 ```
 
@@ -103,8 +101,8 @@ Aeigs-anticheat/
 
 ## 4) Hızlı başlangıç (lokal)
 
-> Not: Proje artık **PostgreSQL** kullanıyor (SQLite kaldırıldı). Lokalde de bir
-> Postgres bağlantısı gerekir — ücretsiz **Neon** en pratik yol.
+> Proje **SQLite** kullanır — ekstra veritabanı sunucusu kurmaya gerek yok,
+> her şey `dev.db` dosyasında tutulur. Tamamen tek makinede (yerel) çalışır.
 
 ```bash
 # 1. Bağımlılıklar
@@ -112,7 +110,8 @@ npm install
 
 # 2. Ortam dosyası
 cp .env.example .env
-#   .env içine DATABASE_URL (Neon), AUTH_SECRET, LICENSE_HMAC_SECRET, APP_URL gir.
+#   Windows PowerShell'de: copy .env.example .env
+#   AUTH_SECRET ve LICENSE_HMAC_SECRET'i rastgele, uzun bir değerle değiştir.
 
 # 3. Tabloları oluştur + örnek veri
 npm run db:push
@@ -147,7 +146,7 @@ Seed sonrası giriş bilgileri:
 
 | Değişken | Zorunlu | Kural | Açıklama |
 |----------|:------:|-------|----------|
-| `DATABASE_URL` | ✅ | min 1 | PostgreSQL bağlantı stringi (Neon pooled önerilir) |
+| `DATABASE_URL` | ✅ | min 1 | SQLite dosya yolu, örn. `file:./dev.db` |
 | `AUTH_SECRET` | ✅ | **≥32 karakter** | Oturum JWT imzalama anahtarı. `openssl rand -base64 48` |
 | `LICENSE_HMAC_SECRET` | ✅ | **≥16 karakter** | Lisans/API token imzalama tuzu. Kurulumdan sonra DEĞİŞTİRME |
 | `APP_URL` | ⛔ (varsayılan localhost) | URL | Uygulama temel URL'i |
@@ -183,7 +182,7 @@ Prisma şeması **18 model** içerir:
 1. `fivem-resource/aeigs-anticheat` klasörünü sunucunun `resources/` dizinine kopyala.
 2. `server.cfg`'ye ekle (panelden **Ayarlar**'dan al):
    ```cfg
-   set aeigs_api   "https://SITEN.netlify.app/api/v1"
+   set aeigs_api   "http://SUNUCU-IP-VEYA-DOMAIN:3000/api/v1"
    set aeigs_token "aeigs_srv_xxxxxxxxxxxxxxxx"
    ensure aeigs-anticheat
    ```
@@ -192,7 +191,7 @@ Prisma şeması **18 model** içerir:
 
 ### Yükleme sırası (fxmanifest)
 `config → client/core.lua → detections/*.lua → main.lua → admin.lua`
-(server tarafı: `http → main → live → protection → damage_sentinel → recorder`).
+(server tarafı: `http → main → live → protection → godmode_guard → recorder`).
 **`core.lua` ilk yüklenmeli** — tüm tespitler onun paylaşılan durumunu kullanır.
 
 ### `config.lua` başlıca ayarlar
@@ -200,8 +199,7 @@ Prisma şeması **18 model** içerir:
 |------|-----------|----------|
 | `aeigs_api` / `aeigs_token` | convar | Panel API adresi ve sunucu token'ı |
 | `MaxWeaponDamage` | 400 | Tek atış hasar tavanı (damage multiplier) |
-| `GodmodeActiveProbe` | true | Godmode'u açılınca yakalayan aktif test |
-| `GodmodeMinHits/MinDamage/Strikes` | 5/150/2 | Pasif godmode (hasar-emilimi) eşikleri |
+| `GodmodeMinHits/MinDamage/Strikes` | 5/150/2 | Sunucu tarafı godmode (hasar-emilimi) eşikleri |
 | `HeartbeatInterval` vb. | saniye | Panel senkron aralıkları |
 
 ---
@@ -248,8 +246,7 @@ FiveM API'leri **Bearer token** tabanlı.
 | Dosya | Yakaladığı | Yöntem |
 |-------|-----------|--------|
 | `noclip.lua` | NoClip | Çarpışma kapalı + hareket, ~2 sn |
-| `godmode.lua` | Godmode (rapor) | Sürekli invincible → HIGH rapor (ban yok) |
-| `godmode_probe.lua` | Godmode (aktif) | Minik test hasarı, can düşmezse → ban |
+| `godmode.lua` | Godmode | Native bayrak taraması (invincible/proofs/config-flag), 25 sn/6 doğrulama → ban |
 | `superjump.lua` | Super Jump | Beast-jump native + dikey hız |
 | `speedhack.lua` | Speed hack | Yaya >18 m/s, araç >130 m/s |
 | `aimbot.lua` | Aimbot | Ani "snap" + düşman oyuncuya kilit |
@@ -267,7 +264,7 @@ Ortak altyapı (`core.lua`): 200ms durum önbelleği, `Aeigs.rule()` (panel kura
   giveWeaponEvent.
 - `live.lua` — teleport taraması (koordinat sıçraması), armor>100, konum/whitelist/
   blacklist/admin senkron.
-- `damage_sentinel.lua` — **genel godmode/health-hack**: oyuncu vuruldu ama canı
+- `godmode_guard.lua` — **genel godmode/health-hack**: oyuncu vuruldu ama canı
   düşmediyse (flag/değere bakmadan) → ban.
 
 ### Ban akışı
@@ -331,31 +328,16 @@ admin/keys, redeem, checkout, ban-lookup, vb.).
 
 ---
 
-## 14) Yayınlama (Netlify)
-
-Ayrıntılı adımlar: **[`NETLIFY-DEPLOY.md`](./NETLIFY-DEPLOY.md)**. Özet:
-
-1. **Neon**'da Postgres oluştur, pooled connection string'i al.
-2. Kendi makinenden bir kez: `DATABASE_URL=… npx prisma db push` (+ `npm run db:seed`).
-3. Netlify'a GitHub'dan import et (ayarlar `netlify.toml`'dan gelir:
-   `@netlify/plugin-nextjs`, Node 20, Prisma Linux binary).
-4. Env değişkenlerini gir: `DATABASE_URL`, `AUTH_SECRET`, `LICENSE_HMAC_SECRET`, `APP_URL`.
-5. Deploy. Site URL'ini FiveM `config.lua`'daki `aeigs_api`'ye yaz.
-
-> Netlify serverless olduğu için **SQLite çalışmaz** — bulut Postgres zorunlu.
-
----
-
-## 15) Sık sorunlar
+## 14) Sık sorunlar
 
 | Belirti | Sebep / çözüm |
 |---------|---------------|
-| Build: "Ortam değişkenleri doğrulanamadı" | Env eksik/kısa. `AUTH_SECRET`≥32, `LICENSE_HMAC_SECRET`≥16 |
-| "Can't reach database" | `DATABASE_URL` yanlış / `?sslmode=require` yok / pooled değil |
-| FiveM bağlanmıyor | `aeigs_api` sonu `/api/v1` mi, token doğru mu, site canlı mı |
+| "Ortam değişkenleri doğrulanamadı" | `.env` eksik/kısa. `AUTH_SECRET`≥32, `LICENSE_HMAC_SECRET`≥16 karakter olmalı |
+| "Can't reach database" | `.env`'de `DATABASE_URL="file:./dev.db"` var mı; `npm run db:push` çalıştırıldı mı |
+| FiveM bağlanmıyor | `aeigs_api` sonu `/api/v1` mi, token doğru mu, panel (`npm run dev`/`start`) ayakta mı, FiveM sunucusu panele ağ üzerinden erişebiliyor mu |
 | 401 INVALID_TOKEN | Token `aeigs_srv_` ile başlamalı; panelde yeniden üret |
 | 403 LICENSE_INACTIVE/EXPIRED | Lisans askıda/iptal/süresi dolmuş |
-| Godmode banlanmıyor | `anti_invincibility` kuralı açık mı; `GodmodeActiveProbe` true mu |
+| Godmode banlanmıyor | `anti_invincibility` kuralı açık mı; native bayrak taraması 25 sn/6 doğrulama ister (hızlı ban için server/godmode_guard.lua PvP'de yakalar) |
 | Kayıt dosyası yok | `resources/aeigs-anticheat/` köküne bakılmalı (server/ değil) |
 
 ---

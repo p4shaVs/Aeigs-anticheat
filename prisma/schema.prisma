@@ -1,16 +1,14 @@
 // Aeigs Anti-Cheat — veritabanı şeması
-// Dev: SQLite. Prod'a geçişte provider'ı "postgresql" yapın; enum'lar zaten
-// string olarak modellendiği için taşıma sorunsuzdur.
+// Yerel/tek makine kurulumu: SQLite (dosya tabanlı, ekstra sunucu gerekmez).
+// İleride buluta taşınırsa provider'ı "postgresql" yapmak yeterli; enum'lar
+// zaten string olarak modellendiği için taşıma sorunsuzdur.
 
 generator client {
-  provider      = "prisma-client-js"
-  // Netlify (Ubuntu 24.04 "noble" = OpenSSL 3.0) + lokal. "native" lokali kapsar.
-  binaryTargets = ["native", "debian-openssl-3.0.x"]
+  provider = "prisma-client-js"
 }
 
 datasource db {
-  // Prod: PostgreSQL (Neon/Supabase). Lokal geliştirme de artık Postgres kullanır.
-  provider = "postgresql"
+  provider = "sqlite"
   url      = env("DATABASE_URL")
 }
 
