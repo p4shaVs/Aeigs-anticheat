@@ -22,7 +22,7 @@ Config.BlacklistInterval   = 60   -- kara listeyi tazeler
 Config.AdminInterval       = 60   -- yönetici listesi + izinleri tazeler
 Config.ScreenshotInterval  = 5    -- bekleyen ekran görüntüsü isteklerini çeker
 
-Config.AcVersion = '0.3.0'
+Config.AcVersion = '0.4.0'
 
 -- ---------------------------------------------------------------------------
 -- Ekran görüntüsü (izleme) — screenshot-basic kaynağı gerekir.
@@ -65,3 +65,11 @@ Config.GodmodeStrikes       = 1      -- tek pencere yeterli (server-authoritativ
 
 -- İzinli kaynaklar dışından spawn olan entity'leri işaretle (protection.lua)
 Config.Debug = false
+
+-- ---------------------------------------------------------------------------
+-- (Opsiyonel) Kaynak allowlist — server/session_guard.lua "anti_resource_mismatch"
+-- kuralı içindir. Boş/nil bırakılırsa özellik tamamen devre dışıdır (varsayılan).
+-- Kullanmak isterseniz sunucunuzdaki TÜM meşru resource adlarını buraya yazın.
+-- ---------------------------------------------------------------------------
+-- Config.AllowedResources = { 'es_extended', 'esx_menu_default', 'aeigs-anticheat', ... }
+Config.AllowedResources = nil

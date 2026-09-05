@@ -8,7 +8,7 @@
 import { RULE_GROUPS } from "./rules";
 import { DETECTION_TYPES, type DetectionAction } from "./detection-actions";
 
-export const LATEST_AC_VERSION = "0.3.0";
+export const LATEST_AC_VERSION = "0.4.0";
 
 export interface SecurityScoreInput {
   rules: Record<string, boolean>;

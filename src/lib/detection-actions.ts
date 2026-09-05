@@ -43,10 +43,17 @@ export const DETECTION_TYPES: DetectionTypeDef[] = [
   { type: "EXPLOSION", label: "Patlama Spam", category: "combat", defaultAction: "LOG" },
   { type: "RAPID_FIRE", label: "Rapid Fire (ateş hızı)", category: "combat", defaultAction: "LOG" },
   { type: "WALLBANG", label: "Wallbang / ESP Göstergesi", category: "combat", defaultAction: "LOG" },
+  { type: "NO_RECOIL", label: "No Recoil (geri tepmesiz)", category: "combat", defaultAction: "LOG" },
+  { type: "GIVE_ALL_WEAPONS", label: "Give All Weapons", category: "combat", defaultAction: "BAN" },
 
   // Can & Zırh
   { type: "GODMODE", label: "Godmode / Yenilmezlik", category: "survival", defaultAction: "BAN" },
   { type: "ARMOR_HACK", label: "Zırh Hilesi", category: "survival", defaultAction: "BAN" },
+  { type: "ARMOR_REGEN", label: "Kalkan Yenilenmesi (pickup'sız)", category: "survival", defaultAction: "LOG" },
+  { type: "NO_FALL_DAMAGE", label: "Düşme Hasarı Bağışıklığı", category: "survival", defaultAction: "LOG" },
+  { type: "VEHICLE_GODMODE", label: "Araç Godmode", category: "survival", defaultAction: "BAN" },
+  { type: "INSTANT_REPAIR", label: "Anlık Araç Onarımı", category: "survival", defaultAction: "LOG" },
+  { type: "OUT_OF_BOUNDS", label: "Harita Dışı / Geçersiz Konum", category: "survival", defaultAction: "BAN" },
 
   // Görsel / Kamera
   { type: "FREECAM", label: "FreeCam", category: "visual", defaultAction: "LOG" },
@@ -64,6 +71,10 @@ export const DETECTION_TYPES: DetectionTypeDef[] = [
   { type: "BLACKLIST_PED", label: "Kara Liste Ped", category: "entity", defaultAction: "BAN" },
   { type: "BLACKLIST_OBJECT", label: "Kara Liste Nesne", category: "entity", defaultAction: "KICK" },
   { type: "BLACKLIST_WEAPON", label: "Kara Liste Silah", category: "entity", defaultAction: "BAN" },
+
+  // Diğer
+  { type: "RECONNECT_SPAM", label: "Sık Giriş/Çıkış", category: "other", defaultAction: "LOG" },
+  { type: "CHAT_FLOOD", label: "Sohbet Spam", category: "other", defaultAction: "KICK" },
 ];
 
 const ALL_TYPES = new Set(DETECTION_TYPES.map((d) => d.type));

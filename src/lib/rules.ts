@@ -61,6 +61,10 @@ export const RULE_GROUPS: RuleGroup[] = [
       { key: "anti_health_mod", label: "Anti Health Stat Modification", description: "Can değeri değiştirme", default: true },
       { key: "anti_invincibility", label: "Anti Invincibility", description: "Yenilmezlik (godmode)", default: true },
       { key: "anti_damage_immunity", label: "Anti Damage Immunity", description: "Hasar bağışıklığı", default: true },
+      { key: "anti_fall_damage", label: "Anti Fall Damage Immunity", description: "Yüksekten düşüp hasar almama (rapor)", default: true },
+      { key: "anti_armor_regen", label: "Anti Armor Regeneration", description: "Kalkan pickup'sız yenileniyor (rapor)", default: true },
+      { key: "anti_vehicle_godmode", label: "Anti Vehicle Godmode", description: "Aracın hasar almaması", default: true },
+      { key: "anti_instant_repair", label: "Anti Instant Repair", description: "Anlık araç onarımı (rapor)", default: true },
     ],
   },
   {
@@ -92,6 +96,8 @@ export const RULE_GROUPS: RuleGroup[] = [
       { key: "anti_ped_spawn", label: "Anti Illegal Ped", description: "İzinsiz ped spawn", default: true },
       { key: "anti_object_spawn", label: "Anti Illegal Object", description: "İzinsiz nesne spawn", default: true },
       { key: "anti_entity_spam", label: "Anti Entity Spam", description: "Nesne spam koruması", default: true },
+      { key: "anti_give_all_weapons", label: "Anti Give All Weapons", description: "Envanterde anormal silah artışı", default: true },
+      { key: "anti_out_of_bounds", label: "Anti Out of Bounds", description: "Harita dışına/geçersiz koordinata ışınlanma", default: true },
     ],
   },
   {
@@ -115,6 +121,9 @@ export const RULE_GROUPS: RuleGroup[] = [
       { key: "client_event_protection", label: "Client Event Protection", description: "Client event koruması", default: true },
       { key: "export_protection", label: "Export Protection", description: "İzinsiz export çağrıları", default: true },
       { key: "anti_event_flood", label: "Anti Event Flood", description: "Event flood koruması", default: true },
+      { key: "anti_reconnect_spam", label: "Anti Reconnect Spam", description: "Kısa sürede sık giriş/çıkış (bypass denemesi)", default: true },
+      { key: "anti_resource_mismatch", label: "Anti Resource Mismatch", description: "İzin listesi dışı client kaynağı (opsiyonel allowlist gerekir)", default: false },
+      { key: "anti_chat_flood", label: "Anti Chat Flood", description: "Sohbet spam koruması", default: true },
     ],
   },
 ];

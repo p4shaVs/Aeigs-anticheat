@@ -37,6 +37,50 @@ CreateThread(function()
   end
 end)
 
+-- ---------------------------------------------------------------------------
+-- GIVE ALL WEAPONS — hile menülerinin klasik özelliği: tüm silahları anında
+-- envantere ekler. Bilinen yaygın silahlardan bir örneklem sayılır; bu
+-- örneklemden BİRDEN FAZLASI aynı 3 sn'lik pencerede aniden belirirse
+-- (normal oyunda silahlar teker teker, satın alınarak/bulunarak gelir)
+-- kesin işaret. Yüksek eşik (≥6 yeni silah) → false riski yok.
+-- ---------------------------------------------------------------------------
+local SAMPLE_WEAPON_NAMES = {
+  'WEAPON_PISTOL', 'WEAPON_COMBATPISTOL', 'WEAPON_APPISTOL', 'WEAPON_PISTOL50',
+  'WEAPON_MICROSMG', 'WEAPON_SMG', 'WEAPON_ASSAULTSMG', 'WEAPON_MINISMG',
+  'WEAPON_ASSAULTRIFLE', 'WEAPON_CARBINERIFLE', 'WEAPON_ADVANCEDRIFLE',
+  'WEAPON_SPECIALCARBINE', 'WEAPON_BULLPUPRIFLE', 'WEAPON_MG', 'WEAPON_COMBATMG',
+  'WEAPON_PUMPSHOTGUN', 'WEAPON_SAWNOFFSHOTGUN', 'WEAPON_ASSAULTSHOTGUN',
+  'WEAPON_BULLPUPSHOTGUN', 'WEAPON_STUNGUN', 'WEAPON_SNIPERRIFLE',
+  'WEAPON_HEAVYSNIPER', 'WEAPON_GRENADELAUNCHER', 'WEAPON_RPG',
+  'WEAPON_MINIGUN', 'WEAPON_GRENADE', 'WEAPON_STICKYBOMB', 'WEAPON_PROXMINE',
+  'WEAPON_MOLOTOV', 'WEAPON_KNIFE', 'WEAPON_NIGHTSTICK', 'WEAPON_HAMMER',
+  'WEAPON_BAT', 'WEAPON_MACHETE', 'WEAPON_SWITCHBLADE', 'WEAPON_REVOLVER',
+  'WEAPON_DOUBLEACTION', 'WEAPON_MARKSMANPISTOL', 'WEAPON_MACHINEPISTOL',
+  'WEAPON_COMBATPDW', 'WEAPON_MARKSMANRIFLE', 'WEAPON_HEAVYRIFLE',
+}
+local SAMPLE_WEAPONS = {}
+for i, wname in ipairs(SAMPLE_WEAPON_NAMES) do SAMPLE_WEAPONS[i] = GetHashKey(wname) end
+
+CreateThread(function()
+  local lastCount = nil
+  while true do
+    Wait(3000)
+    local ped = Aeigs.S.ped
+    if ped and Aeigs.rule('anti_give_all_weapons', true) and Aeigs.active() then
+      local count = 0
+      for _, hash in ipairs(SAMPLE_WEAPONS) do
+        if HasPedGotWeapon(ped, hash, false) then count = count + 1 end
+      end
+      if lastCount ~= nil and (count - lastCount) >= 6 then
+        Aeigs.report('GIVE_ALL_WEAPONS', 'CRITICAL', { before = lastCount, after = count })
+      end
+      lastCount = count
+    else
+      lastCount = nil
+    end
+  end
+end)
+
 -- Kara listedeki silah envanterde belirir belirmez (ateş etmeden)
 CreateThread(function()
   while true do

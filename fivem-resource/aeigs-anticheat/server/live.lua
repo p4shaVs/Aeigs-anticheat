@@ -220,6 +220,7 @@ RegisterNetEvent('aeigs:adminAction', function(action, targetId, arg)
     }, nil)
     TriggerClientEvent('aeigs:notify', target, '~y~Uyarı: ' .. (arg or ''))
   elseif action == 'revive' and target then
+    Aeigs.grantRevive(target)
     TriggerClientEvent('aeigs:revive', target)
   elseif action == 'freeze' and target then
     TriggerClientEvent('aeigs:freeze', target, arg == 'on')
@@ -314,6 +315,17 @@ function Aeigs.grantTp(src)
   tpGrace[tonumber(src)] = GetGameTimer() + 8000
 end
 
+-- Sunucu taraflı revive muafiyeti (vehicle_guard.lua'nın armor-regen kontrolü
+-- kullanır — gerçek reviveyi armor artışıyla karıştırmasın diye).
+local reviveGrace = {}
+function Aeigs.grantRevive(src)
+  reviveGrace[tonumber(src)] = GetGameTimer() + 8000
+end
+function Aeigs.hasReviveGrace(src)
+  local until_ = reviveGrace[tonumber(src)]
+  return until_ ~= nil and GetGameTimer() < until_
+end
+
 --- Client'ta ped handle'ı değişti (multichar/respawn/ölüp-dirilme). Konum
 --- çapasını sıfırla ki eski konumla kıyaslanıp TELEPORT atılmasın.
 RegisterNetEvent('aeigs:respawnAnchor', function()
@@ -331,6 +343,16 @@ local function teleportScan()
     if ped and ped ~= 0 then
       local c = GetEntityCoords(ped)
       if c and not (c.x == 0.0 and c.y == 0.0 and c.z == 0.0) then
+        -- Harita dışı / geçersiz derinlik: GTA V haritası kabaca
+        -- -4000..8000 (x/y) ve -300..1200 (z) sınırları içindedir. Bunun
+        -- ÇOK dışında (ör. Z -1000) olmak yalnızca "haritanın altına
+        -- ışınlanma" hileleriyle mümkündür (dünya kaçışı / obje içine
+        -- saklanma). Cömert sınırlar → gerçek oyun ASLA false vermez.
+        if (Aeigs.getRules()['anti_out_of_bounds'] == true)
+            and (c.z < -300.0 or c.z > 1500.0 or c.x < -6000.0 or c.x > 10000.0 or c.y < -6000.0 or c.y > 10000.0)
+            and not (Aeigs.isWhitelisted and Aeigs.isWhitelisted(src)) then
+          TriggerEvent('aeigs:serverReport', src, 'OUT_OF_BOUNDS', 'CRITICAL', { x = math.floor(c.x), y = math.floor(c.y), z = math.floor(c.z) })
+        end
         -- Zırh > 100 fiziksel olarak İMKANSIZDIR → kesin armor hack (yanlış-pozitif yok)
         if (now - (sPos[src] and sPos[src].seen or now)) > 5000
             and GetPedArmour(ped) > 100
