@@ -34,6 +34,7 @@ export const DETECTION_TYPES: DetectionTypeDef[] = [
 
   // Combat
   { type: "AIMBOT", label: "Aimbot", category: "combat", defaultAction: "BAN" },
+  { type: "AIM_PRECISION_SUSPECTED", label: "Nişan Hassasiyeti Anomalisi (dolaylı)", category: "combat", defaultAction: "LOG" },
   { type: "SILENT_AIM", label: "Silent Aim / Magic Bullet", category: "combat", defaultAction: "BAN" },
   { type: "INFINITE_AMMO", label: "Sonsuz Mermi", category: "combat", defaultAction: "BAN" },
   { type: "NO_RELOAD", label: "Şarjörsüz Ateş", category: "combat", defaultAction: "BAN" },

@@ -30,6 +30,7 @@ local vidToLic = {}   -- [vid] = license  (session -> kalıcı kimlik eşlemesi)
 local WEIGHTS = {
   GODMODE               = { pool_not_dropping = 60, flags = 20 },
   AIMBOT                = { snap = 35, sustained_lock = 45 },
+  AIM_PRECISION_SUSPECTED = { precision = 18 },
   SILENT_AIM            = { confirm1 = 50, confirm2 = 30 },
   CHEAT_MENU_SUSPECTED  = { global_marker = 20, frametime_spike = 6 },
   TRIGGERBOT_SUSPECTED  = { default = 12 },
