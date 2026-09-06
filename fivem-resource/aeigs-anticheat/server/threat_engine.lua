@@ -32,6 +32,7 @@ local WEIGHTS = {
   AIMBOT                = { snap = 35, sustained_lock = 45 },
   SILENT_AIM            = { confirm1 = 50, confirm2 = 30 },
   CHEAT_MENU_SUSPECTED  = { global_marker = 20, frametime_spike = 6 },
+  TRIGGERBOT_SUSPECTED  = { default = 12 },
   NOCLIP                = { default = 45 },
   VEHICLE_NOCLIP        = { default = 40 },
   FLYHACK               = { default = 45 },

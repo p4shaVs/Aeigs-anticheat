@@ -85,6 +85,7 @@ export const RULE_GROUPS: RuleGroup[] = [
       { key: "anti_aimbot", label: "Anti Aimbot", description: "Otomatik nişan", default: true },
       { key: "anti_silent_aim", label: "Anti Silent Aim", description: "Gizli nişan", default: true },
       { key: "anti_wallhack", label: "Anti Wallhack / ESP", description: "Görüş hattı olmadan isabet (rapor)", default: true },
+      { key: "anti_triggerbot", label: "Anti Triggerbot", description: "Zayıf sinyal — tek başına ban atmaz, tehdit skoruna eklenir", default: true },
     ],
   },
   {

@@ -44,6 +44,7 @@ export const DETECTION_TYPES: DetectionTypeDef[] = [
   { type: "RAPID_FIRE", label: "Rapid Fire (ateş hızı)", category: "combat", defaultAction: "LOG" },
   { type: "WALLBANG", label: "Wallbang / ESP Göstergesi", category: "combat", defaultAction: "LOG" },
   { type: "NO_RECOIL", label: "No Recoil (geri tepmesiz)", category: "combat", defaultAction: "LOG" },
+  { type: "TRIGGERBOT_SUSPECTED", label: "Triggerbot Şüphesi (dolaylı)", category: "combat", defaultAction: "LOG" },
   { type: "GIVE_ALL_WEAPONS", label: "Give All Weapons", category: "combat", defaultAction: "BAN" },
 
   // Can & Zırh

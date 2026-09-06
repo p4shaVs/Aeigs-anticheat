@@ -31,6 +31,7 @@ client_scripts {
   'client/detections/superjump.lua',
   'client/detections/speedhack.lua',
   'client/detections/aimbot.lua',         -- Katman 1 (snap) + Katman 2 (sürekli kilit)
+  'client/detections/triggerbot.lua',     -- otomatik ateş tepki-süresi tutarlılığı (zayıf sinyal)
   'client/detections/silentaim.lua',
   'client/detections/norecoil.lua',       -- rapor-only
   'client/detections/nofalldamage.lua',   -- rapor-only
