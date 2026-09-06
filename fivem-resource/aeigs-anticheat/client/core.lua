@@ -62,7 +62,7 @@ end
 -- Legit aksiyon muafiyeti (spawn / admin tp / revive) — yanlış-pozitif önler
 -- Diğer resource'lar da exports ile işaretleyebilir (anti-false + kontrollü bypass)
 -- ---------------------------------------------------------------------------
-Aeigs.grace = { tp = 0, revive = 0, spectate = 0, spawn = GetGameTimer() + 30000 }
+Aeigs.grace = { tp = 0, revive = 0, spectate = 0, spawn = GetGameTimer() + (Config.ClientSpawnGraceMs or 25000) }
 function Aeigs.markTp() Aeigs.grace.tp = GetGameTimer() + 10000 end
 function Aeigs.markRevive() Aeigs.grace.revive = GetGameTimer() + 10000 end
 function Aeigs.markSpectate(on) Aeigs.grace.spectate = on and (GetGameTimer() + 3600000) or 0 end
@@ -81,7 +81,7 @@ exports('markRevive', function() Aeigs.markRevive() end)
 --- "multichar/respawn = TELEPORT ban" hatasına düşmesin.
 local function onRespawn()
   Aeigs.spawned = true
-  Aeigs.grace.spawn = GetGameTimer() + 10000
+  Aeigs.grace.spawn = GetGameTimer() + (Config.ClientSpawnGraceMs or 25000)
   Aeigs.markTp()
   Aeigs.markRevive()
   replayBuf = {}

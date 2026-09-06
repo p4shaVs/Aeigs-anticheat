@@ -63,7 +63,14 @@ Config.GodmodeMinDamage       = 80     -- pencerede toplam en az bu kadar amaçl
 Config.GodmodePoolTolerance   = 10     -- can+zırh havuzu bu kadar bile düşmediyse "hiç düşmedi" say
 Config.GodmodeExpectedDropRatio = 0.0  -- 0 = tam düşüş beklenir; >0 verirsen zırh/kalkan emilimine tolerans tanır
 Config.GodmodeStrikes         = 1      -- tek pencere yeterli (server-authoritative, hızlı ban)
-Config.GodmodeSpawnGraceMs    = 6000   -- (re)spawn sonrası muafiyet — can/zırh geçiş anında false önler
+-- (re)spawn sonrası muafiyet — ESX/QBCore gibi framework'ler karakter
+-- yüklenirken oyuncuyu KENDİLERİ invincible yapar ve bu genelde 15-30 sn
+-- sürebilir; süre bundan kısa olursa framework'ün kendi koruması "godmode"
+-- sanılıp gerçek-hit yönteminde bile false ban çıkar ("girer girmez ban").
+Config.GodmodeSpawnGraceMs   = 25000
+-- Client tarafı (core.lua onRespawn) tüm tespitleri durduran genel spawn
+-- muafiyeti — aynı sebeple sunucudaki değerle aynı/yakın tutulmalı.
+Config.ClientSpawnGraceMs    = 25000
 
 -- ---------------------------------------------------------------------------
 -- MERKEZİ TEHDİT SKORU (server/threat_engine.lua) — cross-signal korelasyon.

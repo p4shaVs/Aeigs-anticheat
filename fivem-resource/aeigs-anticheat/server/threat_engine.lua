@@ -28,7 +28,13 @@ local vidToLic = {}   -- [vid] = license  (session -> kalıcı kimlik eşlemesi)
 -- düşük ağırlıklı — tek başlarına ASLA anlamlı bir skora ulaşamazlar, sadece
 -- başka güçlü bir sinyalle BİRLİKTE anlam kazanırlar.
 local WEIGHTS = {
-  GODMODE               = { pool_not_dropping = 60, flags = 20 },
+  -- 'flags' (client bayrak taraması) KASITLI OLARAK 0: framework'lerin
+  -- (ESX/QBCore) spawn'da kendi verdiği geçici invincibility bu tarama ile
+  -- ayırt edilemiyor ve "girer girmez / 10 sn sonra ban" şikayetinin kaynağıydı.
+  -- Godmode artık SADECE gerçek isabetle ölçen pool_not_dropping (server/
+  -- godmode_guard.lua) tehdit skoruna katkı yapabilir; flags salt panelde
+  -- görünen bilgi amaçlı bir rapor olarak kalır.
+  GODMODE               = { pool_not_dropping = 60, flags = 0, default = 0 },
   AIMBOT                = { snap = 35, sustained_lock = 45 },
   AIM_PRECISION_SUSPECTED = { precision = 18 },
   SILENT_AIM            = { confirm1 = 50, confirm2 = 30 },
